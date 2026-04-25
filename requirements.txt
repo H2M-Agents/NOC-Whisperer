@@ -1,0 +1,27 @@
+# Core
+python-dotenv
+pyyaml
+requests
+pandas
+numpy
+
+# DSPy and LLM
+dspy-ai
+openai
+
+# Async and storage
+aiosqlite
+sqlalchemy
+
+# Dashboard
+rich
+
+# Text analysis (advisory compliance scoring)
+textstat
+
+# Testing
+pytest
+pytest-asyncio
+
+# Ollama client (local dev inference)
+ollama

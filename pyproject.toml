@@ -1,0 +1,11 @@
+[project]
+name = "noc-whisperer"
+version = "0.1.0"
+description = "Agentic alert correlation and incident synthesis"
+requires-python = ">=3.11"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest",
+    "pytest-asyncio",
+]

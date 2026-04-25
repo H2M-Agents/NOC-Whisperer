@@ -1,0 +1,7 @@
+# GPU training only — install on cluster, not locally
+torch
+transformers
+peft
+trl
+accelerate
+bitsandbytes
