@@ -27,8 +27,12 @@ Step 3: Type exactly:
         @CONTEXT.md @EXECUTION_PLAN.md
         Today is Session N. [copy task description below]
 Step 4: Cursor generates code
-Step 5: Review — run unit test if specified
-Step 6: Commit with message: "Session N: [file name]"
+Step 5: Run pytest
+        python3 -m pytest tests/test_<session_file>.py -v
+        All tests must pass before committing
+Step 6: Commit BOTH the implementation and the test file
+        git add <module_file> tests/test_<module_file>
+        git commit -m "feat: <description> + tests"
 Step 7: Close session
 ```
 

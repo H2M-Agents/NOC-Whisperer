@@ -27,3 +27,11 @@ One file per session — do not create files not listed in the current session t
 Never suggest installing torch, transformers, peft, trl, or bitsandbytes
 on the local development machine. These are GPU cluster only dependencies
 defined in requirements-gpu.txt.
+
+Every session that creates a new Python module must also create
+a corresponding test file in tests/test_<module_name>.py
+The test file must cover:
+  - Valid creation of all classes
+  - Invalid inputs that should raise ValueError
+  - Round-trip serialization if to_dict/from_dict exist
+  - The session acceptance test converted to pytest format
