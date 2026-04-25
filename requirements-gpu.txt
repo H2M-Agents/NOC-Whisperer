@@ -1,7 +1,11 @@
-# GPU training only — install on cluster, not locally
-torch
-transformers
-peft
-trl
-accelerate
-bitsandbytes
+# GPU TRAINING DEPENDENCIES — CLUSTER ONLY
+# DO NOT install on local development machine
+# Install with: uv pip install -r requirements-gpu.txt
+# Only run this on the GPU cluster after requirements.txt is installed
+
+torch>=2.1.0
+transformers>=4.40.0
+peft>=0.10.0
+trl>=0.8.0
+accelerate>=0.29.0
+bitsandbytes>=0.43.0

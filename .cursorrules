@@ -23,3 +23,7 @@ Testing:
 - Use in-memory SQLite (:memory:) for all incident store tests
 
 One file per session — do not create files not listed in the current session task.
+
+Never suggest installing torch, transformers, peft, trl, or bitsandbytes
+on the local development machine. These are GPU cluster only dependencies
+defined in requirements-gpu.txt.
