@@ -1,0 +1,25 @@
+# NOC Whisperer — Cursor Rules
+
+This project is the NOC Whisperer — a multi-agent alert correlation system.
+
+Before writing any code:
+1. Read @CONTEXT.md for architecture, data structures, agent contracts, and design decisions
+2. Read @EXECUTION_PLAN.md for today's specific task and acceptance test
+3. Implement exactly what the session specifies — no more, no less
+
+Coding standards:
+- Python 3.11+ with full type hints on all functions
+- Dataclasses for all data structures (no dicts passed between agents)
+- Every class must have a docstring
+- Every public method must have a docstring
+- Use mock MCP tools during development — never assume live OTel stack is running
+- Handle all external API calls with try/except — return [] on failure, never crash
+- Load config from yaml files — never hardcode values
+- Load API keys from .env — never hardcode credentials
+
+Testing:
+- Every session ends with the acceptance test passing
+- Run: python -c "from module import Class; print('OK')" as minimum smoke test
+- Use in-memory SQLite (:memory:) for all incident store tests
+
+One file per session — do not create files not listed in the current session task.
