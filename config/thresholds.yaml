@@ -1,0 +1,19 @@
+compute:
+  cpu_utilization_percent:
+    critical: 90.0
+    major: 80.0
+    minor: 70.0
+  memory_available_mb:
+    critical: 500
+    major: 1000
+    minor: 2000
+storage:
+  disk_used_percent:
+    critical: 90.0
+    major: 80.0
+    minor: 70.0
+service_mesh:
+  http_error_rate_per_min:
+    critical: 20
+    major: 10
+    minor: 5
