@@ -400,54 +400,209 @@ and localhost:9100 are always available.
 
 ---
 
-### Session 8 — Sun Apr 27 — Part 2 (1.5 hours)
-**Task:** Three live MCP tools + three mock MCP tools
+### Session 8 — Prometheus MCP + Mock
+**Task:** `mcp_tools/prometheus_mcp.py` + `mcp_tools/mocks/mock_prometheus_mcp.py`
 
-```
 Files to create:
   mcp_tools/prometheus_mcp.py
-  mcp_tools/jaeger_mcp.py
-  mcp_tools/node_exporter_mcp.py
   mcp_tools/mocks/mock_prometheus_mcp.py
+
+prometheus_mcp.py must implement:
+  class PrometheusMCP:
+    def __init__(self, base_url: str, thresholds_path: str = "config/thresholds.yaml"):
+      # Load thresholds from yaml
+      # Store base_url
+
+    def get_threshold_breaches(self) -> List[CanonicalAlert]:
+      # Query Prometheus API for metric threshold breaches
+      # Queries:
+      #   rate(http_server_duration_milliseconds_count{status_code=~"5.."}[1m]) > 0.1
+      #   valkey_cache_miss_ratio > 0.9
+      #   cart_connections_active / cart_connections_max > 0.9
+      # Returns List[CanonicalAlert] — empty list on connection failure
+
+    def query(self, promql: str) -> dict:
+      # GET {base_url}/api/v1/query?query={promql}
+      # Returns raw API response dict
+      # Returns {} on connection failure
+
+    def get_alerts_since(self, seconds: int = 30) -> List[CanonicalAlert]:
+      # Query for alerts fired in last N seconds
+      # Returns List[CanonicalAlert]
+
+    def health_check(self) -> bool:
+      # GET {base_url}/api/v1/query?query=up
+      # Returns True if response is valid, False otherwise
+
+    def _to_canonical(self, metric_result: dict) -> CanonicalAlert:
+      # Convert Prometheus metric result to CanonicalAlert
+      # Load severity from thresholds.yaml
+      # domain = "service_mesh"
+      # source_system = "prometheus"
+
+mock_prometheus_mcp.py must implement:
+  class MockPrometheusMCP:
+    def __init__(self, scenario_alerts: List[CanonicalAlert] = None):
+      self.scenario_alerts = scenario_alerts or []
+
+    def get_threshold_breaches(self) -> List[CanonicalAlert]:
+      return self.scenario_alerts
+
+    def query(self, promql: str) -> dict:
+      return {"status": "success", "data": {"result": []}}
+
+    def get_alerts_since(self, seconds: int = 30) -> List[CanonicalAlert]:
+      return self.scenario_alerts
+
+    def health_check(self) -> bool:
+      return True
+
+Acceptance test — tests/test_prometheus_mcp.py:
+  test_import()
+  test_mock_returns_empty_by_default()
+  test_mock_returns_injected_alerts()
+  test_mock_health_check_true()
+  test_mock_get_alerts_since()
+  test_live_health_check_fails_gracefully()
+    # With base_url="http://localhost:1", health_check() must return False
+    # Must not raise an exception
+  test_live_get_threshold_breaches_fails_gracefully()
+    # With base_url="http://localhost:1", get_threshold_breaches() must return []
+    # Must not raise an exception
+
+Run: .venv/bin/python3 -m pytest tests/test_prometheus_mcp.py -v
+All 7 tests must pass.
+Run: .venv/bin/python3 -m pytest tests/ -v
+Full suite must pass.
+
+Commit: "feat: prometheus MCP tool + mock + tests"
+
+---
+
+### Session 9 — Jaeger MCP + Mock
+**Task:** `mcp_tools/jaeger_mcp.py` + `mcp_tools/mocks/mock_jaeger_mcp.py`
+
+Files to create:
+  mcp_tools/jaeger_mcp.py
   mcp_tools/mocks/mock_jaeger_mcp.py
+
+jaeger_mcp.py must implement:
+  class JaegerMCP:
+    def __init__(self, base_url: str):
+      self.base_url = base_url
+
+    def get_error_spans(self, since_seconds: int = 30) -> List[CanonicalAlert]:
+      # GET {base_url}/api/traces?service=all&tags={"error":"true"}
+      #     &lookback={since_seconds}s&limit=100
+      # Convert error spans to CanonicalAlert
+      # domain = "application"
+      # source_system = "jaeger"
+      # Returns [] on connection failure
+
+    def health_check(self) -> bool:
+      # GET {base_url}/api/services
+      # Returns True if valid response, False otherwise
+
+    def _span_to_canonical(self, span: dict) -> CanonicalAlert:
+      # Convert Jaeger span to CanonicalAlert
+      # Extract: service name → device
+      # Extract: error type → metric
+      # severity = "major" for error spans
+      # domain = "application"
+
+mock_jaeger_mcp.py must implement:
+  class MockJaegerMCP:
+    def __init__(self, scenario_alerts: List[CanonicalAlert] = None):
+      self.scenario_alerts = scenario_alerts or []
+
+    def get_error_spans(self, since_seconds: int = 30) -> List[CanonicalAlert]:
+      return self.scenario_alerts
+
+    def health_check(self) -> bool:
+      return True
+
+Acceptance test — tests/test_jaeger_mcp.py:
+  test_import()
+  test_mock_returns_empty_by_default()
+  test_mock_returns_injected_alerts()
+  test_mock_health_check_true()
+  test_live_health_check_fails_gracefully()
+    # base_url="http://localhost:1" must return False not raise
+  test_live_get_error_spans_fails_gracefully()
+    # base_url="http://localhost:1" must return [] not raise
+
+Run: .venv/bin/python3 -m pytest tests/test_jaeger_mcp.py -v
+All 6 tests must pass.
+Run: .venv/bin/python3 -m pytest tests/ -v
+Full suite must pass.
+
+Commit: "feat: jaeger MCP tool + mock + tests"
+
+---
+
+### Session 10 — Node Exporter MCP + Mock
+**Task:** `mcp_tools/node_exporter_mcp.py` + `mcp_tools/mocks/mock_node_exporter_mcp.py`
+
+Files to create:
+  mcp_tools/node_exporter_mcp.py
   mcp_tools/mocks/mock_node_exporter_mcp.py
 
-Each live tool must:
-  - Accept base_url in __init__
-  - Load thresholds from config/thresholds.yaml
-  - Return List[CanonicalAlert]
-  - Handle connection errors gracefully (return [] on failure)
-  - Include a health_check() -> bool method
+node_exporter_mcp.py must implement:
+  class NodeExporterMCP:
+    def __init__(self, prometheus_base_url: str,
+                 thresholds_path: str = "config/thresholds.yaml"):
+      # Node Exporter metrics are scraped via Prometheus
+      # Store prometheus_base_url
+      # Load thresholds from yaml
 
-Each mock tool must:
-  - Implement identical interface
-  - Accept scenario_alerts: List[CanonicalAlert] in __init__
-  - get_*() returns the injected alerts
-  - Used for all development and testing
+    def get_host_alerts(self) -> List[CanonicalAlert]:
+      # Query Prometheus for Node Exporter metrics:
+      #   CPU:    100-(avg(rate(node_cpu_seconds_total{mode="idle"}[2m]))*100) > 90
+      #   Memory: node_memory_MemAvailable_bytes < 524288000
+      #   Disk:   (node_filesystem_size_bytes-node_filesystem_free_bytes)
+      #             /node_filesystem_size_bytes > 0.90
+      # domain = "infrastructure"
+      # source_system = "node_exporter"
+      # Returns [] on connection failure
 
-prometheus_mcp.py queries:
-  rate(http_server_duration_milliseconds_count{status_code=~"5.."}[1m]) > 0.1
-  valkey_cache_miss_ratio > 0.9
-  cart_connections_active / cart_connections_max > 0.9
+    def health_check(self) -> bool:
+      # Query Prometheus for node_exporter up metric:
+      #   up{job="node"} == 1
+      # Returns True if result non-empty, False otherwise
 
-jaeger_mcp.py queries:
-  GET /api/traces?service=all&tags={"error":"true"}&lookback=30s&limit=100
+    def _to_canonical(self, metric_result: dict,
+                      metric_name: str) -> CanonicalAlert:
+      # Convert Node Exporter metric to CanonicalAlert
+      # domain = "infrastructure"
+      # Load severity from thresholds.yaml
 
-node_exporter_mcp.py queries (via Prometheus):
-  100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[2m]))*100) > 90
-  node_memory_MemAvailable_bytes < 524288000
-  (node_filesystem_size_bytes - node_filesystem_free_bytes)
-    / node_filesystem_size_bytes > 0.90
+mock_node_exporter_mcp.py must implement:
+  class MockNodeExporterMCP:
+    def __init__(self, scenario_alerts: List[CanonicalAlert] = None):
+      self.scenario_alerts = scenario_alerts or []
 
-Acceptance test:
-  from mcp_tools.mocks.mock_prometheus_mcp import MockPrometheusMCP
-  from adapters.canonical_alert import CanonicalAlert
-  mock = MockPrometheusMCP(scenario_alerts=[])
-  result = mock.get_threshold_breaches()
-  assert isinstance(result, list)
-  assert mock.health_check() == True
-  print("MCP mocks OK")
-```
+    def get_host_alerts(self) -> List[CanonicalAlert]:
+      return self.scenario_alerts
+
+    def health_check(self) -> bool:
+      return True
+
+Acceptance test — tests/test_node_exporter_mcp.py:
+  test_import()
+  test_mock_returns_empty_by_default()
+  test_mock_returns_injected_alerts()
+  test_mock_health_check_true()
+  test_live_health_check_fails_gracefully()
+    # prometheus_base_url="http://localhost:1" must return False not raise
+  test_live_get_host_alerts_fails_gracefully()
+    # prometheus_base_url="http://localhost:1" must return [] not raise
+
+Run: .venv/bin/python3 -m pytest tests/test_node_exporter_mcp.py -v
+All 6 tests must pass.
+Run: .venv/bin/python3 -m pytest tests/ -v
+Full suite must pass.
+
+Commit: "feat: node exporter MCP tool + mock + tests"
 
 ---
 
@@ -457,7 +612,7 @@ Acceptance test:
 
 ---
 
-### Session 9 — Mon Apr 28 — 1 hour
+### Session 11 — Mon Apr 28 — 1 hour
 **Task:** `scripts/prepare_normalizer_sft.py`
 
 ```
@@ -488,7 +643,7 @@ Acceptance test:
 
 ---
 
-### Session 10 — Tue Apr 29 — 1 hour
+### Session 12 — Tue Apr 29 — 1 hour
 **Task:** `scripts/train_normalizer_sft.py` — submit to GPU
 
 ```
@@ -524,7 +679,7 @@ Acceptance test (stub):
 
 ---
 
-### Session 11 — Wed Apr 30 — 1 hour
+### Session 13 — Wed Apr 30 — 1 hour
 **Task:** Check SFT results + `agents/triage_agent.py`
 
 ```
@@ -569,7 +724,7 @@ Acceptance test:
 
 ---
 
-### Session 12 — Thu May 1 — 1 hour
+### Session 14 — Thu May 1 — 1 hour
 **Task:** `scripts/train_normalizer_rlvr.py` — submit + `dspy_programs/alerts_to_incident.py`
 
 ```
@@ -608,7 +763,7 @@ Acceptance test:
 
 ---
 
-### Session 13 — Fri May 2 — 1 hour
+### Session 15 — Fri May 2 — 1 hour
 **Task:** Check RLVR results + lock model + `agents/correlation_agent.py`
 
 ```
@@ -661,7 +816,7 @@ Acceptance test:
 
 ---
 
-### Session 14 — Sat May 3 — Part 1 (1.5 hours)
+### Session 16 — Sat May 3 — Part 1 (1.5 hours)
 **Task:** `scripts/prepare_communications_sft.py` + `scripts/train_communications_sft.py`
 
 ```
@@ -708,7 +863,7 @@ Acceptance test:
 
 ---
 
-### Session 15 — Sat May 3 — Part 2 (1 hour)
+### Session 17 — Sat May 3 — Part 2 (1 hour)
 **Task:** `orchestrator/incident_store.py`
 
 ```
@@ -770,7 +925,7 @@ Acceptance test:
 
 ---
 
-### Session 16 — Sun May 4 — Part 1 (1.5 hours)
+### Session 18 — Sun May 4 — Part 1 (1.5 hours)
 **Task:** Check Communications SFT + `scripts/train_communications_rlvr.py`
 
 ```
@@ -819,7 +974,7 @@ Acceptance test:
 
 ---
 
-### Session 17 — Sun May 4 — Part 2 (1 hour)
+### Session 19 — Sun May 4 — Part 2 (1 hour)
 **Task:** `orchestrator/streaming_pipeline.py`
 
 ```
@@ -882,7 +1037,7 @@ Acceptance test:
 
 ---
 
-### Session 18 — Mon May 5 — 1 hour
+### Session 20 — Mon May 5 — 1 hour
 **Task:** `agents/reconciler_agent.py`
 
 ```
@@ -941,7 +1096,7 @@ Acceptance test:
 
 ---
 
-### Session 19 — Tue May 6 — 1 hour
+### Session 21 — Tue May 6 — 1 hour
 **Task:** `orchestrator/master_orchestrator.py` + `orchestrator/batch_reconciler.py`
 
 ```
@@ -993,7 +1148,7 @@ Acceptance test:
 
 ---
 
-### Session 20 — Wed May 7 — 1 hour
+### Session 22 — Wed May 7 — 1 hour
 **Task:** `scripts/optimize_dspy.py` — THE most important session of Week 15
 
 ```
@@ -1052,7 +1207,7 @@ Acceptance test:
 
 ---
 
-### Session 21 — Thu May 8 — 1 hour
+### Session 23 — Thu May 8 — 1 hour
 **Task:** `ui/noc_dashboard.py`
 
 ```
@@ -1102,7 +1257,7 @@ Acceptance test:
 
 ---
 
-### Session 22 — Fri May 9 — 1 hour
+### Session 24 — Fri May 9 — 1 hour
 **Task:** Full evaluation — all metrics on held-out test set
 
 ```
@@ -1169,7 +1324,7 @@ docs/evaluation_results.md format:
 
 ---
 
-### Session 23 — Sat May 10 — 2-3 hours
+### Session 25 — Sat May 10 — 2-3 hours
 **Task:** Live OTel demo integration + rehearsal
 
 ```
@@ -1220,7 +1375,7 @@ Fix anything that breaks. Document in docs/demo_notes.md.
 
 ---
 
-### Session 24 — Sun May 11 — 2-3 hours
+### Session 26 — Sun May 11 — 2-3 hours
 **Task:** Bug fixes + polish + backup plan
 
 ```
@@ -1254,7 +1409,7 @@ Priority order:
 
 ---
 
-### Session 25 — Mon May 12 — 1 hour
+### Session 27 — Mon May 12 — 1 hour
 **Task:** Fix top 3 failure modes from Week 15
 
 ```
@@ -1265,7 +1420,7 @@ Commit each fix separately with descriptive message.
 
 ---
 
-### Session 26 — Tue May 13 — 1 hour
+### Session 28 — Tue May 13 — 1 hour
 **Task:** Presentation assets
 
 ```
@@ -1321,7 +1476,7 @@ Prepare for likely Q&A questions:
 
 ---
 
-### Session 27 — Wed May 14 — 1 hour
+### Session 29 — Wed May 14 — 1 hour
 **Task:** Timed dress rehearsal
 
 ```
@@ -1344,7 +1499,7 @@ Fix only if critical.
 
 ---
 
-### Session 28 — Thu May 15 — 1 hour
+### Session 30 — Thu May 15 — 1 hour
 **Task:** Final fixes + v1.0 tag
 
 ```
@@ -1369,7 +1524,7 @@ git push --tags
 
 ---
 
-### Session 29 — Fri May 16 — 1 hour
+### Session 31 — Fri May 16 — 1 hour
 **Task:** Contingency + rest
 
 ```
@@ -1420,28 +1575,30 @@ Session 4:  "feat: fault scenario definitions"
 Session 5:  "feat: synthetic alert generator"
 Session 6:  "feat: training dataset generation script"
 Session 7:  "infra: OTel demo stack verified — valkey-cart cascade confirmed"
-Session 8:  "feat: live and mock MCP tools for all three domains"
-Session 9:  "data: normalizer SFT training data preparation"
-Session 10: "train: submit normalizer SFT job"
-Session 11: "feat: triage agent implementation"
-Session 12: "train: submit normalizer RLVR job + DSPy signature"
-Session 13: "feat: correlation agent + lock normalizer model"
-Session 14: "train: communications SFT data + submit job"
-Session 15: "feat: incident store SQLite implementation"
-Session 16: "train: submit communications RLVR job + comms agent stub"
-Session 17: "feat: streaming pipeline orchestration"
-Session 18: "feat: reconciler agent ReAct loop"
-Session 19: "feat: master orchestrator two concurrent loops"
-Session 20: "optimize: DSPy BootstrapFewShot — baseline X% → optimized Y%"
-Session 21: "feat: three-panel rich terminal dashboard"
-Session 22: "eval: full evaluation on held-out test set"
-Session 23: "integration: live OTel demo rehearsal"
-Session 24: "polish: graceful degradation + structured logging + backup recording"
-Session 25: "fix: top 3 failure modes from Week 15"
-Session 26: "docs: presentation notes and evaluation results"
-Session 27: "rehearsal: timed dress rehearsal — no code changes"
-Session 28: "release: v1.0-hackathon-ready"
-Session 29: "contingency: final fixes if needed"
+Session 8:  "feat: prometheus MCP tool + mock + tests"
+Session 9:  "feat: jaeger MCP tool + mock + tests"
+Session 10: "feat: node exporter MCP tool + mock + tests"
+Session 11: "data: normalizer SFT training data preparation"
+Session 12: "train: submit normalizer SFT job"
+Session 13: "feat: triage agent implementation"
+Session 14: "train: submit normalizer RLVR job + DSPy signature"
+Session 15: "feat: correlation agent + lock normalizer model"
+Session 16: "train: communications SFT data + submit job"
+Session 17: "feat: incident store SQLite implementation"
+Session 18: "train: submit communications RLVR job + comms agent stub"
+Session 19: "feat: streaming pipeline orchestration"
+Session 20: "feat: reconciler agent ReAct loop"
+Session 21: "feat: master orchestrator two concurrent loops"
+Session 22: "optimize: DSPy BootstrapFewShot — baseline X% → optimized Y%"
+Session 23: "feat: three-panel rich terminal dashboard"
+Session 24: "eval: full evaluation on held-out test set"
+Session 25: "integration: live OTel demo rehearsal"
+Session 26: "polish: graceful degradation + structured logging + backup recording"
+Session 27: "fix: top 3 failure modes from Week 15"
+Session 28: "docs: presentation notes and evaluation results"
+Session 29: "rehearsal: timed dress rehearsal — no code changes"
+Session 30: "release: v1.0-hackathon-ready"
+Session 31: "contingency: final fixes if needed"
 ```
 
 ---
