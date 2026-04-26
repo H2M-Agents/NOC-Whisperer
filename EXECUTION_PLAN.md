@@ -21,6 +21,12 @@ Total:     ~38 hours across 4 weeks
 ## How To Use This File In Cursor
 
 ```
+Test scope rules by session type:
+   Data prep scripts:    functional-but-light (max 5 examples)
+   GPU training scripts: import + config validation only
+   DSPy optimization:    config validation + mock-based only
+   Agent/pipeline code:  full functional with mock MCP tools
+
 Step 1: Open noc_whisperer/ workspace in Cursor
 Step 2: New chat — model = Claude Sonnet 4.6
 Step 3: Type exactly:
@@ -654,6 +660,16 @@ Files to create:
   scripts/train_normalizer_sft.py
   tests/test_train_normalizer_sft.py
 
+tests/test_train_normalizer_sft.py:
+  Import and config validation only — no GPU execution.
+  Tests must verify:
+    - Script imports without error
+    - LoRA config object is constructed correctly
+    - SFTConfig parameters match CONTEXT.md specs
+    - Output path is correctly configured
+    - Script has if __name__ == '__main__' guard
+  Tests must NOT execute any training.
+
 Script must:
   1. Load Qwen/Qwen2.5-7B-Instruct with LoRA config from CONTEXT.md
   2. Load data/normalizer_sft_train.jsonl
@@ -831,6 +847,12 @@ Files to create:
   scripts/prepare_communications_sft.py
   scripts/train_communications_sft.py
   tests/test_prepare_communications_sft.py
+  tests/test_train_communications_sft.py
+
+tests/test_prepare_communications_sft.py:
+  functional-but-light, 5 examples maximum
+tests/test_train_communications_sft.py:
+  import and config validation only — no GPU execution
 
 prepare_communications_sft.py must:
   Generate 80 (incident, advisory) training pairs:
@@ -945,6 +967,17 @@ Morning check:
 Files to create:
   scripts/train_communications_rlvr.py
   tests/test_train_communications_rlvr.py
+
+tests/test_train_communications_rlvr.py:
+  Import and config validation only — no GPU execution.
+  Tests must verify:
+    - Script imports without error
+    - advisory_reward() function exists and returns float in [0,1]
+    - GRPOConfig parameters match CONTEXT.md specs (G=8)
+    - Reward function returns 1.0 for a perfect advisory
+    - Reward function returns 0.0 for an empty string
+    - Script has if __name__ == '__main__' guard
+  Tests must NOT execute any GRPO training.
 
 Must:
   1. Load from checkpoints/communications_sft_final (warm start)
@@ -1168,6 +1201,17 @@ Acceptance test:
 Files to create:
   scripts/optimize_dspy.py
   tests/test_optimize_dspy.py
+
+tests/test_optimize_dspy.py:
+  Config validation and mock-based only — no live API calls.
+  Tests must verify:
+    - Script imports without error
+    - root_cause_accuracy metric function exists
+    - Metric returns True when prediction matches ground truth
+    - Metric returns False when prediction does not match
+    - Dataset loading function works with data/val.json
+    - Script has if __name__ == '__main__' guard
+  Tests must NOT make any OpenAI API calls.
 
 Script must:
   1. Load val set: data/val.json (30 incidents)
