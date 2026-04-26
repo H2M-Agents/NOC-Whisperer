@@ -53,7 +53,10 @@ class ScenarioDrivenGenerator:
                 self._instantiate_template(template=template, incident_id=incident_id, timestamp=timestamp)
             )
 
-        noise_count = max(0, int(len(correlated_alerts) * noise_ratio))
+        base_noise = int(len(correlated_alerts) * noise_ratio / (1 - noise_ratio))
+        noise_count = max(0, base_noise + random.randint(-1, 2))
+        if random.random() < 0.2 and len(correlated_alerts) > 4:
+            correlated_alerts = correlated_alerts[:-1]
         noise_alerts = [
             self._generate_noise_alert(base_time=base_time, valid_devices=self.valid_devices)
             for _ in range(noise_count)
