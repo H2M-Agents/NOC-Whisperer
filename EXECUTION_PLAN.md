@@ -328,7 +328,79 @@ Acceptance test:
 
 ---
 
-### Session 7 — Sun Apr 27 — Part 2 (1.5 hours)
+### Session 7 — OTel Environment Setup (no code files)
+**Task:** Clone and verify OpenTelemetry demo stack
+
+```
+This session produces NO code files.
+It is a pure environment setup session.
+The only commit is a notes file.
+
+Steps (run in terminal — NOT inside noc_whisperer/ directory):
+
+  1. Clone OTel demo OUTSIDE the noc_whisperer project:
+       cd ~
+       git clone https://github.com/open-telemetry/opentelemetry-demo
+       cd opentelemetry-demo
+
+  2. Add Node Exporter to docker-compose.yml under services::
+       node-exporter:
+         image: prom/node-exporter:latest
+         ports:
+           - "9100:9100"
+         volumes:
+           - /proc:/host/proc:ro
+           - /sys:/host/sys:ro
+         command:
+           - '--path.procfs=/host/proc'
+           - '--path.sysfs=/host/sys'
+
+  3. Start the stack:
+       docker compose up -d
+       # Wait 3-5 minutes for all services to stabilize
+
+  4. Verify all three backends respond:
+       curl http://localhost:9090/api/v1/query?query=up
+       curl http://localhost:16686/api/services
+       curl http://localhost:9100/metrics | head -20
+
+  5. Verify valkey-cart is running:
+       docker compose ps | grep valkey
+
+  6. Test the demo failure scenario once:
+       docker compose stop valkey-cart
+       # Wait 30 seconds
+       curl http://localhost:9090/api/v1/query?query=up
+       docker compose start valkey-cart
+       # Verify valkey-cart recovers
+
+  7. Back inside noc_whisperer/ — create docs/otel_setup_notes.md:
+     Document:
+       - docker compose ps output
+       - Which ports confirmed active
+       - OTel demo directory path on your machine
+       - Any issues encountered and how resolved
+       - Confirmation valkey-cart stop/start cycle works
+
+Acceptance criteria:
+  □ All three curl commands return valid responses
+  □ valkey-cart appears in docker compose ps
+  □ valkey-cart stop/start cycle completes without errors
+  □ docs/otel_setup_notes.md exists and is committed
+
+Commit (from inside noc_whisperer/):
+  git add docs/otel_setup_notes.md
+  git commit -m "infra: OTel demo stack verified — valkey-cart cascade confirmed"
+
+Note: OTel demo directory lives OUTSIDE noc_whisperer/.
+Never clone it inside the project directory.
+Sessions 8 onward assume localhost:9090, localhost:16686,
+and localhost:9100 are always available.
+```
+
+---
+
+### Session 8 — Sun Apr 27 — Part 2 (1.5 hours)
 **Task:** Three live MCP tools + three mock MCP tools
 
 ```
@@ -385,7 +457,7 @@ Acceptance test:
 
 ---
 
-### Session 8 — Mon Apr 28 — 1 hour
+### Session 9 — Mon Apr 28 — 1 hour
 **Task:** `scripts/prepare_normalizer_sft.py`
 
 ```
@@ -416,7 +488,7 @@ Acceptance test:
 
 ---
 
-### Session 9 — Tue Apr 29 — 1 hour
+### Session 10 — Tue Apr 29 — 1 hour
 **Task:** `scripts/train_normalizer_sft.py` — submit to GPU
 
 ```
@@ -452,7 +524,7 @@ Acceptance test (stub):
 
 ---
 
-### Session 10 — Wed Apr 30 — 1 hour
+### Session 11 — Wed Apr 30 — 1 hour
 **Task:** Check SFT results + `agents/triage_agent.py`
 
 ```
@@ -497,7 +569,7 @@ Acceptance test:
 
 ---
 
-### Session 11 — Thu May 1 — 1 hour
+### Session 12 — Thu May 1 — 1 hour
 **Task:** `scripts/train_normalizer_rlvr.py` — submit + `dspy_programs/alerts_to_incident.py`
 
 ```
@@ -536,7 +608,7 @@ Acceptance test:
 
 ---
 
-### Session 12 — Fri May 2 — 1 hour
+### Session 13 — Fri May 2 — 1 hour
 **Task:** Check RLVR results + lock model + `agents/correlation_agent.py`
 
 ```
@@ -589,7 +661,7 @@ Acceptance test:
 
 ---
 
-### Session 13 — Sat May 3 — Part 1 (1.5 hours)
+### Session 14 — Sat May 3 — Part 1 (1.5 hours)
 **Task:** `scripts/prepare_communications_sft.py` + `scripts/train_communications_sft.py`
 
 ```
@@ -636,7 +708,7 @@ Acceptance test:
 
 ---
 
-### Session 14 — Sat May 3 — Part 2 (1 hour)
+### Session 15 — Sat May 3 — Part 2 (1 hour)
 **Task:** `orchestrator/incident_store.py`
 
 ```
@@ -698,7 +770,7 @@ Acceptance test:
 
 ---
 
-### Session 15 — Sun May 4 — Part 1 (1.5 hours)
+### Session 16 — Sun May 4 — Part 1 (1.5 hours)
 **Task:** Check Communications SFT + `scripts/train_communications_rlvr.py`
 
 ```
@@ -747,7 +819,7 @@ Acceptance test:
 
 ---
 
-### Session 16 — Sun May 4 — Part 2 (1 hour)
+### Session 17 — Sun May 4 — Part 2 (1 hour)
 **Task:** `orchestrator/streaming_pipeline.py`
 
 ```
@@ -810,7 +882,7 @@ Acceptance test:
 
 ---
 
-### Session 17 — Mon May 5 — 1 hour
+### Session 18 — Mon May 5 — 1 hour
 **Task:** `agents/reconciler_agent.py`
 
 ```
@@ -869,7 +941,7 @@ Acceptance test:
 
 ---
 
-### Session 18 — Tue May 6 — 1 hour
+### Session 19 — Tue May 6 — 1 hour
 **Task:** `orchestrator/master_orchestrator.py` + `orchestrator/batch_reconciler.py`
 
 ```
@@ -921,7 +993,7 @@ Acceptance test:
 
 ---
 
-### Session 19 — Wed May 7 — 1 hour
+### Session 20 — Wed May 7 — 1 hour
 **Task:** `scripts/optimize_dspy.py` — THE most important session of Week 15
 
 ```
@@ -980,7 +1052,7 @@ Acceptance test:
 
 ---
 
-### Session 20 — Thu May 8 — 1 hour
+### Session 21 — Thu May 8 — 1 hour
 **Task:** `ui/noc_dashboard.py`
 
 ```
@@ -1030,7 +1102,7 @@ Acceptance test:
 
 ---
 
-### Session 21 — Fri May 9 — 1 hour
+### Session 22 — Fri May 9 — 1 hour
 **Task:** Full evaluation — all metrics on held-out test set
 
 ```
@@ -1097,7 +1169,7 @@ docs/evaluation_results.md format:
 
 ---
 
-### Session 22 — Sat May 10 — 2-3 hours
+### Session 23 — Sat May 10 — 2-3 hours
 **Task:** Live OTel demo integration + rehearsal
 
 ```
@@ -1148,7 +1220,7 @@ Fix anything that breaks. Document in docs/demo_notes.md.
 
 ---
 
-### Session 23 — Sun May 11 — 2-3 hours
+### Session 24 — Sun May 11 — 2-3 hours
 **Task:** Bug fixes + polish + backup plan
 
 ```
@@ -1182,7 +1254,7 @@ Priority order:
 
 ---
 
-### Session 24 — Mon May 12 — 1 hour
+### Session 25 — Mon May 12 — 1 hour
 **Task:** Fix top 3 failure modes from Week 15
 
 ```
@@ -1193,7 +1265,7 @@ Commit each fix separately with descriptive message.
 
 ---
 
-### Session 25 — Tue May 13 — 1 hour
+### Session 26 — Tue May 13 — 1 hour
 **Task:** Presentation assets
 
 ```
@@ -1249,7 +1321,7 @@ Prepare for likely Q&A questions:
 
 ---
 
-### Session 26 — Wed May 14 — 1 hour
+### Session 27 — Wed May 14 — 1 hour
 **Task:** Timed dress rehearsal
 
 ```
@@ -1272,7 +1344,7 @@ Fix only if critical.
 
 ---
 
-### Session 27 — Thu May 15 — 1 hour
+### Session 28 — Thu May 15 — 1 hour
 **Task:** Final fixes + v1.0 tag
 
 ```
@@ -1297,7 +1369,7 @@ git push --tags
 
 ---
 
-### Session 28 — Fri May 16 — 1 hour
+### Session 29 — Fri May 16 — 1 hour
 **Task:** Contingency + rest
 
 ```
@@ -1347,28 +1419,29 @@ Session 3:  "feat: topology graph and MCP tool"
 Session 4:  "feat: fault scenario definitions"
 Session 5:  "feat: synthetic alert generator"
 Session 6:  "feat: training dataset generation script"
-Session 7:  "feat: live and mock MCP tools for all three domains"
-Session 8:  "data: normalizer SFT training data preparation"
-Session 9:  "train: submit normalizer SFT job"
-Session 10: "feat: triage agent implementation"
-Session 11: "train: submit normalizer RLVR job + DSPy signature"
-Session 12: "feat: correlation agent + lock normalizer model"
-Session 13: "train: communications SFT data + submit job"
-Session 14: "feat: incident store SQLite implementation"
-Session 15: "train: submit communications RLVR job + comms agent stub"
-Session 16: "feat: streaming pipeline orchestration"
-Session 17: "feat: reconciler agent ReAct loop"
-Session 18: "feat: master orchestrator two concurrent loops"
-Session 19: "optimize: DSPy BootstrapFewShot — baseline X% → optimized Y%"
-Session 20: "feat: three-panel rich terminal dashboard"
-Session 21: "eval: full evaluation on held-out test set"
-Session 22: "integration: live OTel demo rehearsal"
-Session 23: "polish: graceful degradation + structured logging + backup recording"
-Session 24: "fix: top 3 failure modes from Week 15"
-Session 25: "docs: presentation notes and evaluation results"
-Session 26: "rehearsal: timed dress rehearsal — no code changes"
-Session 27: "release: v1.0-hackathon-ready"
-Session 28: "contingency: final fixes if needed"
+Session 7:  "infra: OTel demo stack verified — valkey-cart cascade confirmed"
+Session 8:  "feat: live and mock MCP tools for all three domains"
+Session 9:  "data: normalizer SFT training data preparation"
+Session 10: "train: submit normalizer SFT job"
+Session 11: "feat: triage agent implementation"
+Session 12: "train: submit normalizer RLVR job + DSPy signature"
+Session 13: "feat: correlation agent + lock normalizer model"
+Session 14: "train: communications SFT data + submit job"
+Session 15: "feat: incident store SQLite implementation"
+Session 16: "train: submit communications RLVR job + comms agent stub"
+Session 17: "feat: streaming pipeline orchestration"
+Session 18: "feat: reconciler agent ReAct loop"
+Session 19: "feat: master orchestrator two concurrent loops"
+Session 20: "optimize: DSPy BootstrapFewShot — baseline X% → optimized Y%"
+Session 21: "feat: three-panel rich terminal dashboard"
+Session 22: "eval: full evaluation on held-out test set"
+Session 23: "integration: live OTel demo rehearsal"
+Session 24: "polish: graceful degradation + structured logging + backup recording"
+Session 25: "fix: top 3 failure modes from Week 15"
+Session 26: "docs: presentation notes and evaluation results"
+Session 27: "rehearsal: timed dress rehearsal — no code changes"
+Session 28: "release: v1.0-hackathon-ready"
+Session 29: "contingency: final fixes if needed"
 ```
 
 ---
