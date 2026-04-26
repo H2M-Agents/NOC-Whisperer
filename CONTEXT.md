@@ -18,9 +18,9 @@ and storage monitoring systems arrive simultaneously in incompatible formats
 with no unified incident picture. A senior NOC engineer takes 15–20 minutes
 to identify root cause. This system does it in under 2 seconds.
 
-**Primary demo scenario:** Stop the Redis container in the OpenTelemetry
+**Primary demo scenario:** Stop the Valkey container in the OpenTelemetry
 demo stack. Seven alerts fire across three domains simultaneously. The system
-correlates them into one incident. Root cause: `redis-primary`. Confidence: 0.91.
+correlates them into one incident. Root cause: `valkey-cart`. Confidence: 0.91.
 
 ---
 
@@ -105,7 +105,7 @@ noc_whisperer/
 │   ├── advisory_compliance.py
 │   └── latency_monitor.py
 ├── demo/
-│   ├── inject_failure.sh         # docker compose stop redis
+│   ├── inject_failure.sh         # docker compose stop valkey-cart
 │   └── run_demo.py               # Scripted hackathon walkthrough
 ├── ui/
 │   └── noc_dashboard.py          # Three-panel rich terminal display
@@ -423,9 +423,9 @@ import re
 from textstat import flesch_kincaid_grade
 
 KNOWN_SERVICES = [
-    "redis", "postgresql", "cartservice", "checkoutservice",
-    "paymentservice", "productcatalog", "frontend", "kafka",
-    "accountingservice", "frauddetectionservice", "shippingservice"
+    "valkey-cart", "postgresql", "cart", "checkout",
+    "payment", "product-catalog", "frontend", "kafka",
+    "accounting", "fraud-detection", "shippingservice"
 ]
 
 def advisory_reward(generated: str) -> float:
@@ -664,20 +664,22 @@ async def check_advisory_triggers(incident: Incident):
 Encoded in `topology/otel_demo_graph.json`:
 
 ```
-redis          → feeds: [cartservice, productcatalog]
-postgresql     → feeds: [cartservice, productcatalog, checkoutservice]
-kafka          → feeds: [accountingservice, frauddetectionservice]
-paymentservice → feeds: [checkoutservice]
-cartservice    → feeds: [checkoutservice, frontend]
-                 depends: [redis, postgresql]
-checkoutservice→ feeds: [frontend]
-                 depends: [cartservice, paymentservice, postgresql,
+valkey-cart    → feeds: [cart, product-catalog]
+postgresql     → feeds: [cart, product-catalog, checkout]
+kafka          → feeds: [accounting, fraud-detection]
+payment        → feeds: [checkout]
+cart           → feeds: [checkout, frontend]
+                 depends: [valkey-cart, postgresql]
+checkout       → feeds: [frontend]
+                 depends: [cart, payment, postgresql,
                            currencyservice, emailservice, shippingservice]
-productcatalog → feeds: [checkoutservice, recommendationservice, frontend]
+product-catalog→ feeds: [checkout, recommendation, frontend]
                  depends: [postgresql]
-frontend       → feeds: []
-                 depends: [cartservice, checkoutservice, productcatalog,
-                           recommendationservice, adservice]
+frontend       → feeds: [frontend-proxy]
+                 depends: [cart, checkout, product-catalog,
+                           recommendation, ad]
+frontend-proxy → feeds: []
+                 depends: [frontend]
 ```
 
 ---

@@ -152,20 +152,21 @@ topology_mcp.py must implement:
   get_topology_context(devices) -> dict
 
 mock_topology_mcp.py:
-  Same interface. Returns hardcoded data for Redis cascade scenario.
-  are_related("redis", "postgresql") = False
-  are_related("redis", "cartservice") = True
-  get_cascade_chain("redis") = ["redis", "cartservice",
-                                 "productcatalog", "checkoutservice",
-                                 "frontend"]
+  Same interface. Returns hardcoded data for Valkey cascade scenario.
+  are_related("valkey-cart", "cart") = True
+  are_related("valkey-cart", "checkout") = True  (transitive)
+  are_related("valkey-cart", "kafka") = False
+  get_cascade_chain("valkey-cart") = ["valkey-cart", "cart",
+                                       "checkout", "frontend",
+                                       "frontend-proxy"]
 
 Acceptance test:
-  test_get_downstream_redis()
-  test_get_upstream_cartservice()
+  test_get_downstream_valkey_cart()
+  test_get_upstream_cart()
   test_are_related_direct()
   test_are_related_transitive()
   test_are_related_unrelated()
-  test_cascade_chain_redis()
+  test_cascade_chain_valkey_cart()
   test_topology_context_returns_dict()
   test_mock_topology_mcp()
 ```
@@ -1113,7 +1114,7 @@ Steps:
        python -m orchestrator.master_orchestrator
 
   5. In separate terminal — run demo:
-       bash demo/inject_failure.sh  (docker compose stop redis)
+       bash demo/inject_failure.sh  (docker compose stop valkey-cart)
 
   6. Watch dashboard for:
        □ 7+ alerts arriving in Panel 1
@@ -1122,7 +1123,7 @@ Steps:
        □ Reconciler fires at 30s mark — incidents merge
        □ Confirmed advisory in Panel 3 within 3 minutes
 
-  7. Restore: docker compose start redis
+  7. Restore: docker compose start valkey-cart
 
   8. Repeat 3 times — verify reproducibility
 
@@ -1133,7 +1134,7 @@ Steps:
         echo "=== NOC WHISPERER DEMO ==="
         echo "Stopping Redis at $(date)"
         cd /path/to/opentelemetry-demo
-        docker compose stop redis
+        docker compose stop valkey-cart
         echo "Redis stopped. Watch the dashboard."
 
   11. Create demo/run_demo.py — narrated script version
