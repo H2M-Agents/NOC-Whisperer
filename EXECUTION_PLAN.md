@@ -76,12 +76,14 @@ Acceptance test:
 ---
 
 ### Session 2 — Thu Apr 24 — 1 hour
-**Task:** `adapters/canonical_alert.py`
+**Task:** `adapters/canonical_alert.py` + `adapters/synthetic_adapter.py` + `config/thresholds.yaml`
 
 ```
 Files to create:
   adapters/__init__.py
   adapters/canonical_alert.py
+  adapters/synthetic_adapter.py
+  config/thresholds.yaml
 
 Must contain exactly three dataclasses:
   CanonicalAlert  — all fields as specified in CONTEXT.md
@@ -97,10 +99,21 @@ Requirements:
       status must be in {open, resolved}
   - Include a to_dict() method on each dataclass
   - Include a from_dict() classmethod on each dataclass
+  - Add `SyntheticAdapter` stub in `adapters/synthetic_adapter.py`:
+      class SyntheticAdapter
+      to_canonical(raw_dict: dict) -> CanonicalAlert
+      (returns hardcoded test CanonicalAlert for now)
+  - Set `config/thresholds.yaml` values exactly:
+      compute.cpu_utilization_percent critical/major/minor = 90.0/80.0/70.0
+      compute.memory_available_mb critical/major/minor = 500/1000/2000
+      storage.disk_used_percent critical/major/minor = 90.0/80.0/70.0
+      service_mesh.http_error_rate_per_min critical/major/minor = 20/10/5
 
 Acceptance test:
   python -c "from adapters.canonical_alert import CanonicalAlert,
              TriageDecision, Incident; print('OK')"
+  python -c "from adapters.synthetic_adapter import SyntheticAdapter; print('OK')"
+  test -f config/thresholds.yaml
 ```
 
 ---
