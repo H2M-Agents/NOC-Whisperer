@@ -21,6 +21,13 @@ Testing:
 - Every session ends with the acceptance test passing
 - Run: python -c "from module import Class; print('OK')" as minimum smoke test
 - Use in-memory SQLite (:memory:) for all incident store tests
+- Always run pytest using the project venv:
+  .venv/bin/python3 -m pytest tests/ -v
+- Never use system python3 directly for pytest.
+
+General rules:
+- All file edits including .cursorrules must be driven
+  through Cursor. Never edit files manually outside Cursor.
 
 One file per session — do not create files not listed in the current session task.
 
