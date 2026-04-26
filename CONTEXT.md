@@ -48,15 +48,12 @@ correlates them into one incident. Root cause: `valkey-cart`. Confidence: 0.91.
 noc_whisperer/
 ├── adapters/
 │   ├── canonical_alert.py        # CanonicalAlert, TriageDecision, Incident dataclasses
-│   ├── jaeger_adapter.py         # Jaeger span → CanonicalAlert
-│   ├── prometheus_adapter.py     # Prometheus metric → CanonicalAlert
-│   ├── node_exporter_adapter.py  # Node Exporter metric → CanonicalAlert
 │   └── synthetic_adapter.py     # Synthetic generator output → CanonicalAlert
 ├── mcp_tools/
 │   ├── topology_mcp.py           # Dependency graph queries
-│   ├── jaeger_mcp.py             # Application domain alerts
-│   ├── prometheus_mcp.py         # Service mesh domain alerts
-│   ├── node_exporter_mcp.py      # Infrastructure domain alerts
+│   ├── jaeger_mcp.py             # Application domain alerts; includes _span_to_canonical()
+│   ├── prometheus_mcp.py         # Service mesh domain alerts; includes _to_canonical()
+│   ├── node_exporter_mcp.py      # Infrastructure domain alerts; includes _to_canonical()
 │   └── mocks/
 │       ├── mock_topology_mcp.py
 │       ├── mock_jaeger_mcp.py
@@ -184,6 +181,11 @@ class Incident:
 Each tool returns `List[CanonicalAlert]` or structured data.
 All tools must have a mock version in `mcp_tools/mocks/`.
 Agents call tools through these interfaces — never directly against APIs.
+Each MCP tool contains its own internal conversion method
+(_to_canonical() or _span_to_canonical()) that converts
+raw API responses to CanonicalAlert. There are no separate
+adapter files for live MCP tools — conversion is co-located
+with the tool that owns the data source.
 
 ```python
 class TopologyMCP:
