@@ -338,6 +338,16 @@ Acceptance test:
 **Task:** Clone and verify OpenTelemetry demo stack
 
 ```
+CRITICAL PATH: Session 7 must be completed before Session 24.
+Session 24 (integration testing) is scheduled for Sat May 10.
+Session 7 (OTel VM setup) must be done by Fri May 9 at latest.
+If corporate VM Docker access is not confirmed by Sun May 3,
+immediately provision a cloud VM as backup:
+  AWS t3.xlarge (16GB) or Digital Ocean 8GB Droplet or Hetzner CX31
+  Estimated cost: $5-15 for two weeks
+  Required ports: 9090, 16686, 9100, 3000, 8080
+Do not let VM access delay block the demo.
+
 This session produces NO code files.
 It is a pure environment setup session.
 The only commit is a notes file.
