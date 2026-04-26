@@ -31,6 +31,11 @@ Testing:
   - Training script tests: import and config validation only
 - Full production runs happen via direct script execution only,
   never via pytest.
+- For every MCP tool implementation, tests must include
+  at least one test that calls the internal _to_canonical()
+  or equivalent conversion method directly with a mock
+  API response payload. This verifies the success path
+  without requiring a live connection.
 
 General rules:
 - All file edits including .cursorrules must be driven
