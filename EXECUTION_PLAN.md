@@ -47,13 +47,13 @@ Note: Never modify CONTEXT.md or EXECUTION_PLAN.md
 
 ---
 
-## WEEK 13 — Foundation (Apr 23–27)
+## WEEK 13 — Foundation (Sun Apr 26–Sat May 2)
 
 **Goal:** Data pipeline working. All 4 MCP tools independently testable. No agents yet.
 
 ---
 
-### Session 1 — Wed Apr 23 — 1 hour
+### Session 1 — Fri Apr 24 — 1 hour
 **Task:** Project scaffold + requirements + .cursorrules
 
 ```
@@ -84,7 +84,7 @@ Acceptance test:
 
 ---
 
-### Session 2 — Thu Apr 24 — 1 hour
+### Session 2 — Sat Apr 25 — 1 hour
 **Task:** `adapters/canonical_alert.py` + `adapters/synthetic_adapter.py` + `config/thresholds.yaml`
 
 ```
@@ -127,7 +127,7 @@ Acceptance test:
 
 ---
 
-### Session 3 — Fri Apr 25 — 1 hour
+### Session 3 — Sat Apr 25 — 1 hour
 **Task:** `topology/otel_demo_graph.json` + `mcp_tools/topology_mcp.py`
 
 ```
@@ -179,7 +179,7 @@ Acceptance test:
 
 ---
 
-### Session 4 — Sat Apr 26 — Part 1 (1.5 hours)
+### Session 4 — Sat Apr 25 — Part 1 + Part 2
 **Task:** `generator/fault_scenarios.py`
 
 ```
@@ -230,7 +230,7 @@ Acceptance test:
 
 ---
 
-### Session 5 — Sat Apr 26 — Part 2 (1.5 hours)
+### Session 5 — Sun Apr 26 — 1.5 hours
 **Task:** `generator/synthetic_generator.py`
 
 ```
@@ -295,7 +295,7 @@ Acceptance test:
 
 ---
 
-### Session 6 — Sun Apr 27 — Part 1 (1 hour)
+### Session 6 — Sun Apr 26 — 1 hour
 **Task:** `scripts/generate_training_data.py` — run `.venv/bin/python3 scripts/generate_training_data.py` — commit data/
 
 ```
@@ -334,7 +334,7 @@ Acceptance test:
 
 ---
 
-### Session 7 — OTel Environment Setup (no code files)
+### Session 7 — TBD (deferred — OTel VM setup)
 **Task:** Clone and verify OpenTelemetry demo stack
 
 ```
@@ -406,7 +406,7 @@ and localhost:9100 are always available.
 
 ---
 
-### Session 8 — Prometheus MCP + Mock
+### Session 8 — Sun Apr 26 — 1 hour
 **Task:** `mcp_tools/prometheus_mcp.py` + `mcp_tools/mocks/mock_prometheus_mcp.py`
 
 Files to create:
@@ -485,7 +485,7 @@ Commit: "feat: prometheus MCP tool + mock + tests"
 
 ---
 
-### Session 9 — Jaeger MCP + Mock
+### Session 9 — Sun Apr 26 — 1 hour
 **Task:** `mcp_tools/jaeger_mcp.py` + `mcp_tools/mocks/mock_jaeger_mcp.py`
 
 Files to create:
@@ -547,7 +547,7 @@ Commit: "feat: jaeger MCP tool + mock + tests"
 
 ---
 
-### Session 10 — Node Exporter MCP + Mock
+### Session 10 — Mon Apr 27 — 1 hour
 **Task:** `mcp_tools/node_exporter_mcp.py` + `mcp_tools/mocks/mock_node_exporter_mcp.py`
 
 Files to create:
@@ -614,13 +614,13 @@ Commit: "feat: node exporter MCP tool + mock + tests"
 
 ---
 
-## WEEK 14 — Models and Agents (Apr 28–May 4)
+## WEEK 14 — Models and Agents (Sun May 3–Sat May 9)
 
 **Goal:** Both fine-tuned models locked. All five agents implemented. Pipeline wired.
 
 ---
 
-### Session 11 — Mon Apr 28 — 1 hour
+### Session 11 — Tue Apr 28 — 1 hour
 **Task:** `scripts/prepare_normalizer_sft.py`
 
 ```
@@ -652,7 +652,7 @@ Acceptance test:
 
 ---
 
-### Session 12 — Tue Apr 29 — 1 hour
+### Session 12 — Wed Apr 29 — 1 hour
 **Task:** `scripts/train_normalizer_sft.py` — submit to GPU
 
 ```
@@ -699,7 +699,7 @@ Acceptance test (stub):
 
 ---
 
-### Session 13 — Wed Apr 30 — 1 hour
+### Session 13 — Thu Apr 30 — 1 hour
 **Task:** Check SFT results + `agents/triage_agent.py`
 
 ```
@@ -745,7 +745,7 @@ Acceptance test:
 
 ---
 
-### Session 14 — Thu May 1 — 1 hour
+### Session 14 — Fri May 1 — 1 hour
 **Task:** `scripts/train_normalizer_rlvr.py` — submit + `dspy_programs/alerts_to_incident.py`
 
 ```
@@ -785,7 +785,7 @@ Acceptance test:
 
 ---
 
-### Session 15 — Fri May 2 — 1 hour
+### Session 15 — Sat May 2 — 1.5 hours
 **Task:** Check RLVR results + lock model + `agents/correlation_agent.py`
 
 ```
@@ -839,7 +839,7 @@ Acceptance test:
 
 ---
 
-### Session 16 — Sat May 3 — Part 1 (1.5 hours)
+### Session 16 — Sun May 3 — 1.5 hours
 **Task:** `scripts/prepare_communications_sft.py` + `scripts/train_communications_sft.py`
 
 ```
@@ -893,7 +893,7 @@ Acceptance test:
 
 ---
 
-### Session 17 — Sat May 3 — Part 2 (1 hour)
+### Session 17 — Sun May 3 — 1 hour
 **Task:** `orchestrator/incident_store.py`
 
 ```
@@ -956,7 +956,7 @@ Acceptance test:
 
 ---
 
-### Session 18 — Sun May 4 — Part 1 (1.5 hours)
+### Session 18 — Mon May 4 — 1 hour
 **Task:** Check Communications SFT + `scripts/train_communications_rlvr.py`
 
 ```
@@ -1017,7 +1017,7 @@ Acceptance test:
 
 ---
 
-### Session 19 — Sun May 4 — Part 2 (1 hour)
+### Session 19 — Tue May 5 — 1 hour
 **Task:** `orchestrator/streaming_pipeline.py`
 
 ```
@@ -1075,13 +1075,13 @@ Acceptance test:
 
 ---
 
-## WEEK 15 — Integration and Optimization (May 5–11)
+## WEEK 15 — Integration and Optimization (Sun May 10–Sat May 16)
 
 **Goal:** DSPy delta measured. Reconciler working. Full evaluation numbers in hand. Demo rehearsed.
 
 ---
 
-### Session 20 — Mon May 5 — 1 hour
+### Session 20 — Wed May 6 — 1 hour
 **Task:** `agents/reconciler_agent.py`
 
 ```
@@ -1141,7 +1141,7 @@ Acceptance test:
 
 ---
 
-### Session 21 — Tue May 6 — 1 hour
+### Session 21 — Thu May 7 — 1 hour
 **Task:** `orchestrator/master_orchestrator.py` + `orchestrator/batch_reconciler.py`
 
 ```
@@ -1194,7 +1194,7 @@ Acceptance test:
 
 ---
 
-### Session 22 — Wed May 7 — 1 hour
+### Session 22 — Fri May 8 — 1 hour
 **Task:** `scripts/optimize_dspy.py` — THE most important session of Week 15
 
 ```
@@ -1265,7 +1265,7 @@ Acceptance test:
 
 ---
 
-### Session 23 — Thu May 8 — 1 hour
+### Session 23 — Sat May 9 — 2-3 hours
 **Task:** `ui/noc_dashboard.py`
 
 ```
@@ -1316,7 +1316,7 @@ Acceptance test:
 
 ---
 
-### Session 24 — Fri May 9 — 1 hour
+### Session 24 — Sun May 10 — 2-3 hours
 **Task:** Full evaluation — all metrics on held-out test set
 
 ```
@@ -1384,7 +1384,7 @@ docs/evaluation_results.md format:
 
 ---
 
-### Session 25 — Sat May 10 — 2-3 hours
+### Session 25 — Mon May 11 — 1 hour
 **Task:** Live OTel demo integration + rehearsal
 
 ```
@@ -1435,7 +1435,7 @@ Fix anything that breaks. Document in docs/demo_notes.md.
 
 ---
 
-### Session 26 — Sun May 11 — 2-3 hours
+### Session 26 — Tue May 12 — 1 hour
 **Task:** Bug fixes + polish + backup plan
 
 ```
@@ -1463,13 +1463,13 @@ Priority order:
 
 ---
 
-## WEEK 16 — Demo and Hackathon (May 12–18)
+## WEEK 16 — Demo and Hackathon (Sun May 17 — demo day)
 
 **Goal:** Polished, rehearsed, defensible. No new features.
 
 ---
 
-### Session 27 — Mon May 12 — 1 hour
+### Session 27 — Wed May 13 — 1 hour
 **Task:** Fix top 3 failure modes from Week 15
 
 ```
@@ -1480,7 +1480,7 @@ Commit each fix separately with descriptive message.
 
 ---
 
-### Session 28 — Tue May 13 — 1 hour
+### Session 28 — Thu May 14 — 1 hour
 **Task:** Presentation assets
 
 ```
@@ -1536,7 +1536,7 @@ Prepare for likely Q&A questions:
 
 ---
 
-### Session 29 — Wed May 14 — 1 hour
+### Session 29 — Fri May 15 — 1 hour
 **Task:** Timed dress rehearsal
 
 ```
@@ -1559,7 +1559,7 @@ Fix only if critical.
 
 ---
 
-### Session 30 — Thu May 15 — 1 hour
+### Session 30 — Sat May 16 — 1 hour
 **Task:** Final fixes + v1.0 tag
 
 ```
@@ -1584,7 +1584,7 @@ git push --tags
 
 ---
 
-### Session 31 — Fri May 16 — 1 hour
+### Session 31 — Sun May 17 — Hackathon demo day
 **Task:** Contingency + rest
 
 ```
