@@ -98,37 +98,67 @@ class PrometheusMCP:
         except Exception:
             value = 0.0
 
-        severity = self._severity_for_metric(metric_name, value)
-        description = f"Prometheus threshold breach: {metric_name}={value:.4f}"
+        timestamp = datetime.now(timezone.utc)
+        try:
+            if isinstance(raw_value, list) and len(raw_value) >= 1:
+                timestamp = datetime.fromtimestamp(float(raw_value[0]), tz=timezone.utc)
+        except Exception:
+            timestamp = datetime.now(timezone.utc)
+
+        threshold = self._threshold_for_metric(metric_name)
+        severity = self._severity_for_metric(metric_name, value, threshold)
+        message = f"Prometheus threshold breach on {device}: {metric_name}={value:.4f} (threshold={threshold})"
 
         return CanonicalAlert(
             alert_id=str(uuid.uuid4()),
-            timestamp=datetime.now(timezone.utc).isoformat(),
-            source_system="prometheus",
+            timestamp=timestamp,
             domain="service_mesh",
-            metric=metric_name,
-            value=value,
-            device=device,
             severity=severity,
-            description=description,
-            incident_id=None,
+            device=device,
+            metric=metric_name,
+            message=message,
+            source_system="prometheus",
+            value=value,
+            threshold=threshold,
+            confidence=0.90,
+            raw_payload=metric_result,
         )
 
-    def _severity_for_metric(self, metric_name: str, value: float) -> str:
+    def _threshold_for_metric(self, metric_name: str) -> float:
+        """Return major-level threshold used to flag Prometheus breaches."""
+        if metric_name == "valkey_cache_miss_ratio":
+            config = self.thresholds.get("storage", {}).get("cache_miss_ratio", {})
+            return float(config.get("major", 0.7))
+        if metric_name == "http_server_duration_milliseconds_count":
+            config = self.thresholds.get("service_mesh", {}).get("http_error_rate_per_min", {})
+            return float(config.get("major", 10))
+        if metric_name in {"cart_connections_active", "cart_connections_max"}:
+            config = self.thresholds.get("service_mesh", {}).get("connection_pool_saturation", {})
+            return float(config.get("major", 0.8))
+        config = self.thresholds.get("service_mesh", {}).get("connection_pool_saturation", {})
+        return float(config.get("major", 0.8))
+
+    def _severity_for_metric(self, metric_name: str, value: float, threshold: float) -> str:
         """Infer severity using thresholds config and conservative defaults."""
         if metric_name == "valkey_cache_miss_ratio":
-            critical = 0.95
-            major = 0.9
-            minor = 0.8
+            config = self.thresholds.get("storage", {}).get("cache_miss_ratio", {})
+            critical = float(config.get("critical", max(threshold, 0.9)))
+            major = float(config.get("major", threshold))
+            minor = float(config.get("minor", min(threshold, 0.5)))
         elif metric_name == "http_server_duration_milliseconds_count":
             config = self.thresholds.get("service_mesh", {}).get("http_error_rate_per_min", {})
-            critical = float(config.get("critical", 20))
-            major = float(config.get("major", 10))
-            minor = float(config.get("minor", 5))
+            critical = float(config.get("critical", max(threshold, 20)))
+            major = float(config.get("major", threshold))
+            minor = float(config.get("minor", min(threshold, 5)))
+        elif metric_name in {"cart_connections_active", "cart_connections_max"}:
+            config = self.thresholds.get("service_mesh", {}).get("connection_pool_saturation", {})
+            critical = float(config.get("critical", max(threshold, 0.95)))
+            major = float(config.get("major", threshold))
+            minor = float(config.get("minor", min(threshold, 0.7)))
         else:
-            critical = 0.95
-            major = 0.9
-            minor = 0.8
+            critical = max(threshold, 0.95)
+            major = threshold
+            minor = max(0.0, threshold * 0.85)
 
         if value >= critical:
             return "critical"

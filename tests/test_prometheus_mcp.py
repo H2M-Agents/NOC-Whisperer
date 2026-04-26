@@ -1,6 +1,51 @@
 """Unit tests for Prometheus MCP live and mock implementations."""
 
 
+def test_to_canonical_produces_valid_canonical_alert() -> None:
+    import time
+    from datetime import datetime
+
+    from adapters.canonical_alert import CanonicalAlert
+    from mcp_tools.prometheus_mcp import PrometheusMCP
+
+    live = PrometheusMCP(base_url="http://localhost:1")
+
+    mock_metric_result = {
+        "metric": {
+            "__name__": "http_error_rate_per_min",
+            "job": "cart",
+            "instance": "cart:8080",
+        },
+        "value": [time.time(), "25.5"],
+    }
+
+    alert = live._to_canonical(mock_metric_result)
+
+    assert isinstance(alert, CanonicalAlert)
+    assert alert.domain == "service_mesh"
+    assert alert.source_system == "prometheus"
+    assert alert.value == 25.5
+    assert alert.device == "cart"
+    assert isinstance(alert.timestamp, datetime)
+    assert alert.confidence == 0.90
+    assert isinstance(alert.raw_payload, dict)
+    assert getattr(alert, "incident_id", None) is None
+
+
+def test_to_canonical_severity_is_valid() -> None:
+    import time
+
+    from mcp_tools.prometheus_mcp import PrometheusMCP
+
+    live = PrometheusMCP(base_url="http://localhost:1")
+    mock_metric_result = {
+        "metric": {"__name__": "http_error_rate_per_min", "job": "checkout", "instance": "checkout:5050"},
+        "value": [time.time(), "25.0"],
+    }
+    alert = live._to_canonical(mock_metric_result)
+    assert alert.severity in {"critical", "major", "minor", "warning"}
+
+
 def test_import() -> None:
     from mcp_tools.prometheus_mcp import PrometheusMCP
     from mcp_tools.mocks.mock_prometheus_mcp import MockPrometheusMCP
