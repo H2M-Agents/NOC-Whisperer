@@ -200,20 +200,25 @@ Must define:
     — Each alert_template dict has keys:
         domain, severity, device, metric, message_template, value_range
 
-  REDIS_CASCADE_SCENARIO: FaultScenario
+  VALKEY_CART_CASCADE_SCENARIO: FaultScenario
     — Scenario 1 — the primary demo scenario
     — Fully detailed with 7-8 alert templates
-    — ground_truth: {root_cause_device: "redis",
+    — ground_truth: {root_cause_device: "valkey-cart",
                      initiating_domain: "infrastructure",
-                     affected_services: ["postgresql", "cartservice",
-                                         "productcatalog", "frontend"],
+                     affected_services: ["cart", "checkout",
+                                         "frontend", "frontend-proxy"],
                      cascade_type: "load_amplification",
                      correlation_window_seconds: 120}
+  Device names in all alert_templates must exactly match keys in
+  topology/otel_demo_graph.json. Valid names: valkey-cart, cart,
+  checkout, frontend, frontend-proxy, payment, product-catalog,
+  kafka, accounting, fraud-detection, shipping, currency, email,
+  recommendation, ad, image-provider, flagd, quote
 
 Acceptance test:
-  from generator.fault_scenarios import ALL_SCENARIOS, REDIS_CASCADE_SCENARIO
+  from generator.fault_scenarios import ALL_SCENARIOS, VALKEY_CART_CASCADE_SCENARIO
   assert len(ALL_SCENARIOS) == 12
-  assert REDIS_CASCADE_SCENARIO.ground_truth["root_cause_device"] == "redis"
+  assert VALKEY_CART_CASCADE_SCENARIO.ground_truth["root_cause_device"] == "valkey-cart"
   print("Fault scenarios OK")
 ```
 
@@ -272,11 +277,11 @@ Requirements:
 
 Acceptance test:
   from generator.synthetic_generator import ScenarioDrivenGenerator
-  from generator.fault_scenarios import REDIS_CASCADE_SCENARIO
+  from generator.fault_scenarios import VALKEY_CART_CASCADE_SCENARIO
   gen = ScenarioDrivenGenerator()
-  storm = gen.generate_storm(REDIS_CASCADE_SCENARIO, noise_ratio=0.3)
+  storm = gen.generate_storm(VALKEY_CART_CASCADE_SCENARIO, noise_ratio=0.3)
   assert len(storm["alerts"]) >= 7
-  assert storm["ground_truth"]["root_cause_device"] == "redis"
+  assert storm["ground_truth"]["root_cause_device"] == "valkey-cart"
   correlated = [a for a in storm["alerts"] if a.incident_id is not None]
   assert len(correlated) >= 7
   print("Generator OK")
@@ -285,7 +290,7 @@ Acceptance test:
 ---
 
 ### Session 6 — Sun Apr 27 — Part 1 (1 hour)
-**Task:** `scripts/generate_training_data.py` — run it — commit data/
+**Task:** `scripts/generate_training_data.py` — run `.venv/bin/python3 scripts/generate_training_data.py` — commit data/
 
 ```
 Files to create:
@@ -310,7 +315,7 @@ After generation:
   Commit the script but NOT the data files
 
 Acceptance test:
-  python scripts/generate_training_data.py
+  .venv/bin/python3 scripts/generate_training_data.py
   # Must complete without errors
   # Must print summary
   import json
@@ -350,9 +355,8 @@ Each mock tool must:
 
 prometheus_mcp.py queries:
   rate(http_server_duration_milliseconds_count{status_code=~"5.."}[1m]) > 0.1
-  redis_cache_miss_ratio > 0.9
-  postgresql_query_duration_seconds > 2.0
-  cartservice_connections_active / cartservice_connections_max > 0.9
+  valkey_cache_miss_ratio > 0.9
+  cart_connections_active / cart_connections_max > 0.9
 
 jaeger_mcp.py queries:
   GET /api/traces?service=all&tags={"error":"true"}&lookback=30s&limit=100
@@ -792,7 +796,7 @@ Must implement:
 
 Acceptance test:
   # Run streaming pipeline with all mock tools for 5 seconds
-  # Feed Redis cascade alerts via mock tools
+  # Feed valkey-cart cascade alerts via mock tools
   # Verify incidents appear in incident_store
   # Verify advisory fires when confidence threshold crossed
   print("Streaming pipeline OK")
@@ -908,7 +912,7 @@ master_orchestrator.py must implement:
 
 Acceptance test:
   # Run full orchestrator with all mocks for 35 seconds
-  # Feed Redis cascade alerts at T=0
+  # Feed valkey-cart cascade alerts at T=0
   # Verify: incidents created by streaming at T~15s
   # Verify: reconciler fires at T~30s, merges incidents
   # Verify: confirmed advisory fires after merge
@@ -1254,9 +1258,9 @@ Use a stopwatch. Record actual times for each section.
 Adjust notes where you overrun.
 
 Run live demo 3 times consecutively:
-  1. Stop redis — run through — restore redis
-  2. Stop redis — run through — restore redis
-  3. Stop redis — run through — restore redis
+  1. Stop valkey-cart — run through — restore valkey-cart
+  2. Stop valkey-cart — run through — restore valkey-cart
+  3. Stop valkey-cart — run through — restore valkey-cart
 
 Verify demo is reproducible every time.
 Check: does the architecture SVG display clearly when zoomed?
