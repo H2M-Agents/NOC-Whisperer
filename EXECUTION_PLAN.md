@@ -34,6 +34,9 @@ Step 6: Commit BOTH the implementation and the test file
         git add <module_file> tests/test_<module_file>
         git commit -m "feat: <description> + tests"
 Step 7: Close session
+
+Note: Never modify CONTEXT.md or EXECUTION_PLAN.md
+      during implementation sessions.
 ```
 
 ---
@@ -157,12 +160,14 @@ mock_topology_mcp.py:
                                  "frontend"]
 
 Acceptance test:
-  from mcp_tools.topology_mcp import TopologyMCP
-  t = TopologyMCP("topology/otel_demo_graph.json")
-  assert "cartservice" in t.get_downstream("redis")
-  assert t.are_related("redis", "frontend") == True
-  assert t.are_related("redis", "kafka") == False
-  print("Topology tests passed")
+  test_get_downstream_redis()
+  test_get_upstream_cartservice()
+  test_are_related_direct()
+  test_are_related_transitive()
+  test_are_related_unrelated()
+  test_cascade_chain_redis()
+  test_topology_context_returns_dict()
+  test_mock_topology_mcp()
 ```
 
 ---
