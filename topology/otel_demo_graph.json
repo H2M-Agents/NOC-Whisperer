@@ -1,1 +1,135 @@
-{}
+{
+  "valkey-cart": {
+    "type": "cache",
+    "domain": "infrastructure",
+    "feeds_into": ["cart"],
+    "depends_on": [],
+    "criticality": "high"
+  },
+  "kafka": {
+    "type": "message_queue",
+    "domain": "infrastructure",
+    "feeds_into": ["accounting", "fraud-detection", "checkout"],
+    "depends_on": [],
+    "criticality": "high"
+  },
+  "ad": {
+    "type": "business",
+    "domain": "application",
+    "feeds_into": ["frontend"],
+    "depends_on": [],
+    "criticality": "low"
+  },
+  "cart": {
+    "type": "business",
+    "domain": "application",
+    "feeds_into": ["checkout", "frontend"],
+    "depends_on": ["valkey-cart"],
+    "criticality": "high"
+  },
+  "checkout": {
+    "type": "business",
+    "domain": "application",
+    "feeds_into": ["frontend", "accounting", "fraud-detection"],
+    "depends_on": [
+      "cart", "currency", "email", "payment",
+      "product-catalog", "shipping", "kafka"
+    ],
+    "criticality": "high"
+  },
+  "currency": {
+    "type": "business",
+    "domain": "application",
+    "feeds_into": ["checkout", "frontend"],
+    "depends_on": [],
+    "criticality": "medium"
+  },
+  "email": {
+    "type": "business",
+    "domain": "application",
+    "feeds_into": ["checkout"],
+    "depends_on": [],
+    "criticality": "low"
+  },
+  "payment": {
+    "type": "business",
+    "domain": "application",
+    "feeds_into": ["checkout"],
+    "depends_on": [],
+    "criticality": "high"
+  },
+  "product-catalog": {
+    "type": "business",
+    "domain": "application",
+    "feeds_into": ["checkout", "recommendation", "frontend"],
+    "depends_on": [],
+    "criticality": "medium"
+  },
+  "quote": {
+    "type": "business",
+    "domain": "application",
+    "feeds_into": ["shipping"],
+    "depends_on": [],
+    "criticality": "low"
+  },
+  "recommendation": {
+    "type": "business",
+    "domain": "application",
+    "feeds_into": ["frontend"],
+    "depends_on": ["product-catalog"],
+    "criticality": "low"
+  },
+  "shipping": {
+    "type": "business",
+    "domain": "application",
+    "feeds_into": ["checkout"],
+    "depends_on": ["quote"],
+    "criticality": "medium"
+  },
+  "accounting": {
+    "type": "business",
+    "domain": "application",
+    "feeds_into": [],
+    "depends_on": ["kafka"],
+    "criticality": "medium"
+  },
+  "fraud-detection": {
+    "type": "business",
+    "domain": "application",
+    "feeds_into": [],
+    "depends_on": ["kafka"],
+    "criticality": "medium"
+  },
+  "image-provider": {
+    "type": "infrastructure",
+    "domain": "infrastructure",
+    "feeds_into": ["frontend"],
+    "depends_on": [],
+    "criticality": "low"
+  },
+  "frontend": {
+    "type": "business",
+    "domain": "application",
+    "feeds_into": ["frontend-proxy"],
+    "depends_on": [
+      "ad", "cart", "checkout", "currency",
+      "image-provider", "payment", "product-catalog",
+      "recommendation", "shipping"
+    ],
+    "criticality": "high"
+  },
+  "frontend-proxy": {
+    "type": "infrastructure",
+    "domain": "infrastructure",
+    "feeds_into": [],
+    "depends_on": ["frontend"],
+    "criticality": "high"
+  },
+  "flagd": {
+    "type": "infrastructure",
+    "domain": "infrastructure",
+    "feeds_into": [],
+    "depends_on": [],
+    "criticality": "low"
+  }
+}
