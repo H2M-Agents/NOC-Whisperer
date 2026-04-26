@@ -56,3 +56,9 @@ The test file must cover:
   - Round-trip serialization if to_dict/from_dict exist
   - The session acceptance test converted to pytest format
 
+Every session that creates implementation files must also
+create a corresponding test file in tests/test_<module>.py.
+The test file must always be listed explicitly in the
+"Files to create" section of the session prompt.
+If the user does not mention a test file, ask before proceeding.
+

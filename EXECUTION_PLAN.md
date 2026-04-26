@@ -485,6 +485,7 @@ Commit: "feat: prometheus MCP tool + mock + tests"
 Files to create:
   mcp_tools/jaeger_mcp.py
   mcp_tools/mocks/mock_jaeger_mcp.py
+  tests/test_jaeger_mcp.py
 
 jaeger_mcp.py must implement:
   class JaegerMCP:
@@ -546,6 +547,7 @@ Commit: "feat: jaeger MCP tool + mock + tests"
 Files to create:
   mcp_tools/node_exporter_mcp.py
   mcp_tools/mocks/mock_node_exporter_mcp.py
+  tests/test_node_exporter_mcp.py
 
 node_exporter_mcp.py must implement:
   class NodeExporterMCP:
@@ -618,6 +620,7 @@ Commit: "feat: node exporter MCP tool + mock + tests"
 ```
 Files to create:
   scripts/prepare_normalizer_sft.py
+  tests/test_prepare_normalizer_sft.py
 
 Script must:
   1. Load data/train.json
@@ -649,6 +652,7 @@ Acceptance test:
 ```
 Files to create:
   scripts/train_normalizer_sft.py
+  tests/test_train_normalizer_sft.py
 
 Script must:
   1. Load Qwen/Qwen2.5-7B-Instruct with LoRA config from CONTEXT.md
@@ -690,6 +694,7 @@ Morning check:
 Files to create:
   agents/__init__.py
   agents/triage_agent.py
+  tests/test_triage_agent.py
 
 triage_agent.py must implement:
   class TriageAgent:
@@ -732,6 +737,7 @@ Files to create:
   scripts/train_normalizer_rlvr.py
   dspy_programs/__init__.py
   dspy_programs/alerts_to_incident.py
+  tests/test_alerts_to_incident.py
 
 train_normalizer_rlvr.py must:
   1. Load from checkpoints/normalizer_sft_final (warm start)
@@ -779,6 +785,7 @@ Lock model:
 
 Files to create:
   agents/correlation_agent.py
+  tests/test_correlation_agent.py
 
 correlation_agent.py must implement:
   class CorrelationAgent:
@@ -823,6 +830,7 @@ Acceptance test:
 Files to create:
   scripts/prepare_communications_sft.py
   scripts/train_communications_sft.py
+  tests/test_prepare_communications_sft.py
 
 prepare_communications_sft.py must:
   Generate 80 (incident, advisory) training pairs:
@@ -870,6 +878,7 @@ Acceptance test:
 Files to create:
   orchestrator/__init__.py
   orchestrator/incident_store.py
+  tests/test_incident_store.py
 
 incident_store.py must implement:
   class IncidentStore:
@@ -935,6 +944,7 @@ Morning check:
 
 Files to create:
   scripts/train_communications_rlvr.py
+  tests/test_train_communications_rlvr.py
 
 Must:
   1. Load from checkpoints/communications_sft_final (warm start)
@@ -980,6 +990,7 @@ Acceptance test:
 ```
 Files to create:
   orchestrator/streaming_pipeline.py
+  tests/test_streaming_pipeline.py
 
 Must implement:
   class StreamingPipeline:
@@ -1043,6 +1054,7 @@ Acceptance test:
 ```
 Files to create:
   agents/reconciler_agent.py
+  tests/test_reconciler_agent.py
 
 Must implement:
   @dataclass
@@ -1103,6 +1115,7 @@ Acceptance test:
 Files to create:
   orchestrator/batch_reconciler.py
   orchestrator/master_orchestrator.py
+  tests/test_master_orchestrator.py
 
 batch_reconciler.py must implement:
   class BatchReconciler:
@@ -1154,6 +1167,7 @@ Acceptance test:
 ```
 Files to create:
   scripts/optimize_dspy.py
+  tests/test_optimize_dspy.py
 
 Script must:
   1. Load val set: data/val.json (30 incidents)
@@ -1214,6 +1228,7 @@ Acceptance test:
 Files to create:
   ui/__init__.py
   ui/noc_dashboard.py
+  tests/test_noc_dashboard.py
 
 Must implement using rich library:
   class NOCDashboard:
@@ -1268,6 +1283,7 @@ Files to create:
   evaluation/advisory_compliance.py
   evaluation/latency_monitor.py
   docs/evaluation_results.md
+  tests/test_evaluation_suite.py
 
 Each evaluation script must:
   - Load data/test.json (FIRST TIME this file is used)
