@@ -28,6 +28,12 @@ Never suggest installing torch, transformers, peft, trl, or bitsandbytes
 on the local development machine. These are GPU cluster only dependencies
 defined in requirements-gpu.txt.
 
+CONTEXT.md and EXECUTION_PLAN.md are read-only during all implementation
+sessions. Never modify these files when writing code. If you find a gap
+or error in either file, report it as a comment in your response only.
+Only modify these files when explicitly asked with the instruction:
+"Update CONTEXT.md" or "Update EXECUTION_PLAN.md".
+
 Every session that creates a new Python module must also create
 a corresponding test file in tests/test_<module_name>.py
 The test file must cover:
@@ -35,3 +41,4 @@ The test file must cover:
   - Invalid inputs that should raise ValueError
   - Round-trip serialization if to_dict/from_dict exist
   - The session acceptance test converted to pytest format
+
