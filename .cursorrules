@@ -24,6 +24,13 @@ Testing:
 - Always run pytest using the project venv:
   .venv/bin/python3 -m pytest tests/ -v
 - Never use system python3 directly for pytest.
+- Tests must never generate full production datasets.
+- Use minimum data size that validates the logic:
+  - Dataset generation tests: 3/2/1 incidents maximum
+  - SFT preparation tests: 5 examples maximum
+  - Training script tests: import and config validation only
+- Full production runs happen via direct script execution only,
+  never via pytest.
 
 General rules:
 - All file edits including .cursorrules must be driven
