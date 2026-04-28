@@ -662,49 +662,91 @@ Acceptance test:
 
 ---
 
-### Session 12 — Wed Apr 29 — 1 hour
-**Task:** `scripts/train_normalizer_sft.py` — submit to GPU
+### Session 12 — Wed Apr 29 — Part 1 (Mac — no GPU needed)
+**Task:** Write `scripts/train_normalizer_sft.py` + tests
 
 ```
 Files to create:
   scripts/train_normalizer_sft.py
+  agents/normalizer_agent.py  (stub)
   tests/test_train_normalizer_sft.py
 
-tests/test_train_normalizer_sft.py:
+tests/test_train_normalizer_sft.py scope:
   Import and config validation only — no GPU execution.
   Tests must verify:
     - Script imports without error
-    - LoRA config object is constructed correctly
-    - SFTConfig parameters match CONTEXT.md specs
-    - Output path is correctly configured
-    - Script has if __name__ == '__main__' guard
+    - LoRA config object constructed with correct parameters:
+      r=16, lora_alpha=32, target_modules=["q_proj","v_proj"]
+      lora_dropout=0.05, bias="none", task_type="CAUSAL_LM"
+    - SFTConfig parameters match CONTEXT.md:
+      num_train_epochs=3
+      per_device_train_batch_size=4
+      learning_rate=2e-4
+    - Output path configured as checkpoints/normalizer_sft_final/
+    - Script has if name == 'main' guard
+    - normalizer_reward() function exists and accepts
+      predicted and ground_truth dicts
   Tests must NOT execute any training.
 
-Script must:
-  1. Load Qwen/Qwen2.5-7B-Instruct with LoRA config from CONTEXT.md
-  2. Load data/normalizer_sft_train.jsonl
-  3. Run SFTTrainer with config from CONTEXT.md
-  4. Log loss per epoch to logs/normalizer_sft_loss.txt
-  5. Save to checkpoints/normalizer_sft_final/
-  6. Print: "SFT training complete. Loss: {final_loss}"
+scripts/train_normalizer_sft.py must:
+  Load Qwen/Qwen2.5-7B-Instruct with LoRA config from CONTEXT.md
+  Load data/normalizer_sft_train.jsonl
+  Run SFTTrainer with config from CONTEXT.md
+  Log loss per epoch to logs/normalizer_sft_loss.txt
+  Save to checkpoints/normalizer_sft_final/
+  Print: "SFT training complete. Loss: {final_loss}"
+  Has if name == 'main' guard
 
-Requires GPU. Submit as background job:
-  nohup python scripts/train_normalizer_sft.py > logs/normalizer_sft.log 2>&1 &
-  echo $! > pids/normalizer_sft.pid
+agents/normalizer_agent.py stub must:
+  load_model(model_path) — loads from path or Ollama fallback
+  process(raw_payload, source_system) -> CanonicalAlert
+  Uses Ollama/llama3.1:8b if model not yet trained
+  Switches to fine-tuned model when
+  models/normalizer_final_locked exists
 
-While job runs: write agents/normalizer_agent.py (stub version)
+Acceptance test:
+  .venv/bin/python3 -m pytest tests/test_train_normalizer_sft.py -v
+  All tests pass — no GPU required.
+  .venv/bin/python3 -m pytest tests/ -v
+  Full suite passes.
+Commit: "train: normalizer SFT script + stub agent + config tests (Part 1)"
+```
 
-normalizer_agent.py stub:
-  - load_model(model_path) — loads from path or Ollama if path doesn't exist
-  - process(raw_payload, source_system) -> CanonicalAlert
-  - Uses Ollama/llama3.1:8b if model not yet trained
-  - Switches to fine-tuned model when models/normalizer_final_locked exists
+### Session 12 — Wed Apr 29 — Part 2 (GPU machine)
+**Task:** Submit training job to GPU machine
 
-Acceptance test (stub):
-  from agents.normalizer_agent import NormalizerAgent
-  agent = NormalizerAgent(model_path=None)  # uses Ollama
-  # Verify import succeeds
-  print("Normalizer agent stub OK")
+```
+REMINDER-003 must be resolved before this part.
+Confirm GPU access: nvidia-smi
+Steps (run on GPU machine — NOT Mac):
+
+Copy script to GPU machine:
+scp scripts/train_normalizer_sft.py user@GPU_HOST:~/noc_whisperer/scripts/
+scp data/normalizer_sft_train.jsonl user@GPU_HOST:~/noc_whisperer/data/
+SSH into GPU machine:
+ssh user@GPU_HOST
+Install dependencies if needed:
+pip install transformers peft trl torch --break-system-packages
+Submit as background job:
+mkdir -p logs pids
+nohup python scripts/train_normalizer_sft.py
+> logs/normalizer_sft.log 2>&1 &
+echo $! > pids/normalizer_sft.pid
+echo "Job submitted. PID: $(cat pids/normalizer_sft.pid)"
+Verify job is running:
+tail -f logs/normalizer_sft.log
+Should show model loading, then training progress
+Ctrl+C to stop tailing — job continues in background
+
+Expected runtime: ~2 hours on RTX 5090
+
+Next morning check:
+cat logs/normalizer_sft.log | tail -20
+Verify: loss decreasing, checkpoint saved
+ls -la checkpoints/normalizer_sft_final/
+Verify checkpoint exists
+Commit after job completes:
+"train: normalizer SFT job complete — checkpoint saved"
 ```
 
 ---
