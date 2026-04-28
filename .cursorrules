@@ -67,3 +67,9 @@ The test file must always be listed explicitly in the
 "Files to create" section of the session prompt.
 If the user does not mention a test file, ask before proceeding.
 
+At the start of every session, check docs/REMINDERS.md.
+If any OPEN reminder is marked BLOCKING for the current
+session number, alert the user immediately before writing
+any code. Show the full reminder text and ask the user
+to confirm it is resolved before proceeding.
+
