@@ -425,9 +425,11 @@ import re
 from textstat import flesch_kincaid_grade
 
 KNOWN_SERVICES = [
-    "valkey-cart", "postgresql", "cart", "checkout",
-    "payment", "product-catalog", "frontend", "kafka",
-    "accounting", "fraud-detection", "shippingservice"
+    "valkey-cart", "cart", "checkout", "payment",
+    "product-catalog", "recommendation", "shipping",
+    "currency", "email", "ad", "frontend", "frontend-proxy",
+    "kafka", "accounting", "fraud-detection",
+    "image-provider", "quote", "flagd"
 ]
 
 def advisory_reward(generated: str) -> float:
@@ -666,22 +668,28 @@ async def check_advisory_triggers(incident: Incident):
 Encoded in `topology/otel_demo_graph.json`:
 
 ```
-valkey-cart    → feeds: [cart, product-catalog]
-postgresql     → feeds: [cart, product-catalog, checkout]
-kafka          → feeds: [accounting, fraud-detection]
-payment        → feeds: [checkout]
-cart           → feeds: [checkout, frontend]
-                 depends: [valkey-cart, postgresql]
-checkout       → feeds: [frontend]
-                 depends: [cart, payment, postgresql,
-                           currencyservice, emailservice, shippingservice]
-product-catalog→ feeds: [checkout, recommendation, frontend]
-                 depends: [postgresql]
-frontend       → feeds: [frontend-proxy]
-                 depends: [cart, checkout, product-catalog,
-                           recommendation, ad]
-frontend-proxy → feeds: []
-                 depends: [frontend]
+valkey-cart  → feeds: [cart],              depends: []
+kafka        → feeds: [accounting, fraud-detection, checkout], depends: []
+ad           → feeds: [frontend],           depends: []
+cart         → feeds: [checkout, frontend], depends: [valkey-cart]
+checkout     → feeds: [frontend, accounting, fraud-detection]
+               depends: [cart, currency, email, payment,
+                         product-catalog, shipping, kafka]
+currency     → feeds: [checkout, frontend], depends: []
+email        → feeds: [checkout],           depends: []
+payment      → feeds: [checkout],           depends: []
+product-catalog → feeds: [checkout, recommendation, frontend], depends: []
+quote        → feeds: [shipping],           depends: []
+recommendation → feeds: [frontend],         depends: [product-catalog]
+shipping     → feeds: [checkout],           depends: [quote]
+accounting   → feeds: [],                   depends: [kafka]
+fraud-detection → feeds: [],                depends: [kafka]
+image-provider → feeds: [frontend],         depends: []
+frontend     → feeds: [frontend-proxy]
+               depends: [ad, cart, checkout, currency, image-provider,
+                         payment, product-catalog, recommendation, shipping]
+frontend-proxy → feeds: [], depends: [frontend]
+flagd        → feeds: [], depends: []
 ```
 
 ---
