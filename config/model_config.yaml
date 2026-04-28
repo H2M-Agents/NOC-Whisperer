@@ -1,0 +1,19 @@
+# Model selection per agent per environment
+# LLM endpoint URLs are in config/llm_endpoints.yaml
+# API keys are in .env — never hardcode here
+normalizer_agent:
+  development: ollama/llama3.1:8b
+  production:  models/normalizer_final_locked
+
+communications_agent:
+  development: ollama/llama3.1:8b
+  production:  models/communications_final_locked
+
+correlation_agent:
+  development:       ollama/llama3.1:8b
+  dspy_optimization: gpt-oss-20b        # SV cluster — see llm_endpoints.yaml
+  dspy_validation:   gpt-4o-mini        # paid — run after flow finalized
+  demo:              gpt-4o-mini        # or claude-opus-4-7 for hackathon
+
+reconciler_agent:
+  all: gpt-4o-mini

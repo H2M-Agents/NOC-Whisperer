@@ -1,0 +1,75 @@
+# LLM Inference Endpoints
+# Separates model inference endpoints from MCP data source endpoints.
+# Do NOT hardcode API keys here — use .env for all secrets.
+# ${VAR} placeholders are resolved from .env at runtime.
+
+# Development — local Ollama, zero cost, no internet required
+development:
+  provider: ollama
+  base_url: http://localhost:11434
+  model: llama3.1:8b
+  api_key: none
+
+# DSPy optimization — SV cluster internal model, zero token cost
+# Use this for all BootstrapFewShot optimization runs
+dspy_optimization:
+  provider: sv_cluster
+  base_url: ${OPENAI_API_BASE}
+  model: gpt-oss-20b
+  api_key: ${OPENAI_API_KEY}
+  notes: >
+    OpenAI-compatible REST API served on SV cluster.
+    Set OPENAI_API_BASE in .env to the SV cluster endpoint.
+    Confirm exact model name and auth requirements with reviewer.
+
+# DSPy validation — run after flow is finalized
+# Validates that optimized prompts transfer to paid models
+dspy_validation:
+  provider: openai
+  base_url: https://api.openai.com/v1
+  model: gpt-4o-mini
+  api_key: ${OPENAI_API_KEY}
+  estimated_cost: ~$5 per full optimization run
+
+# Correlation agent — development and demo
+correlation_agent_dev:
+  provider: ollama
+  base_url: http://localhost:11434
+  model: llama3.1:8b
+  api_key: none
+
+correlation_agent_demo:
+  provider: openai
+  base_url: https://api.openai.com/v1
+  model: gpt-4o-mini
+  api_key: ${OPENAI_API_KEY}
+  notes: >
+    Switch to claude-opus-4-7 for hackathon demo if stronger
+    reasoning is desired. Update model field only.
+
+# Reconciler agent — all environments
+reconciler_agent:
+  provider: openai
+  base_url: https://api.openai.com/v1
+  model: gpt-4o-mini
+  api_key: ${OPENAI_API_KEY}
+
+# Normalizer agent — uses fine-tuned local model, not an LLM endpoint
+# See config/model_config.yaml for model path
+normalizer_agent:
+  provider: local_finetuned
+  model_path: models/normalizer_final_locked
+  notes: >
+    Loaded from local disk — no endpoint needed.
+    Falls back to ollama/llama3.1:8b during development
+    before fine-tuned model is available.
+
+# Communications agent — uses fine-tuned local model, not an LLM endpoint
+# See config/model_config.yaml for model path
+communications_agent:
+  provider: local_finetuned
+  model_path: models/communications_final_locked
+  notes: >
+    Loaded from local disk — no endpoint needed.
+    Falls back to ollama/llama3.1:8b during development
+    before fine-tuned model is available.

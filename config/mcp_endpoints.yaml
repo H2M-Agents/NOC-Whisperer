@@ -1,0 +1,12 @@
+jaeger:
+  base_url: http://VM_IP:16686
+  traces_endpoint: /api/traces
+
+prometheus:
+  base_url: http://VM_IP:9090
+  query_endpoint: /api/v1/query
+  range_endpoint: /api/v1/query_range
+
+node_exporter:
+  prometheus_base_url: http://VM_IP:9090
+  job_name: node

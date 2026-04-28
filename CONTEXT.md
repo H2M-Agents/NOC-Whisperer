@@ -36,7 +36,7 @@ correlates them into one incident. Root cause: `valkey-cart`. Confidence: 0.91.
 | Terminal dashboard | rich |
 | Live data source (demo) | OpenTelemetry demo app + Node Exporter (Docker Compose) |
 | Base model | Qwen/Qwen2.5-7B-Instruct |
-| DSPy backing model | GPT-4o-mini |
+| DSPy backing model | gpt-oss-20b (SV cluster, optimization) / gpt-4o-mini (validation and demo) |
 | Local dev inference | Ollama + Llama3.1:8b |
 | IDE | Cursor + Claude Sonnet 4.6 (code) / Opus 4.7 (planning only) |
 
@@ -109,6 +109,7 @@ noc_whisperer/
 ├── config/
 │   ├── thresholds.yaml           # Alert severity thresholds per metric
 │   ├── mcp_endpoints.yaml        # Prometheus/Jaeger/Node Exporter URLs
+│   ├── llm_endpoints.yaml    # LLM inference endpoints per environment
 │   ├── model_config.yaml         # Model paths — NO API KEYS HERE
 │   └── reconciler_config.yaml   # Interval: 30s demo / 900s production
 ├── docs/
@@ -395,8 +396,12 @@ class AlertsToIncident(dspy.Signature):
 
 # Optimizer:  dspy.BootstrapFewShot(max_bootstrapped_demos=8)
 # Metric:     root_cause_device accuracy on val set (30 incidents)
-# Model:      GPT-4o-mini
-# Run ONCE:   Week 15, scripts/optimize_dspy.py
+# Model (optimization): gpt-oss-20b via SV cluster (zero token cost)
+# Model (validation):   gpt-4o-mini or Claude Opus 4.7
+# Endpoint config:      config/llm_endpoints.yaml
+# Run ONCE:              Week 15, scripts/optimize_dspy.py
+# Cost:                  Zero token cost during optimization
+#                        (internal model — no API charges)
 # Save:       dspy_programs/alerts_to_incident_compiled.json
 ```
 

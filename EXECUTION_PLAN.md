@@ -1225,10 +1225,24 @@ tests/test_optimize_dspy.py:
 
 Script must:
   1. Load val set: data/val.json (30 incidents)
-  2. Configure DSPy LM:
-       lm = dspy.OpenAI(model="gpt-4o-mini",
-                        api_key=os.environ["OPENAI_API_KEY"])
+  2. Configure DSPy LM from config/llm_endpoints.yaml:
+       import yaml
+       with open("config/llm_endpoints.yaml") as f:
+           llm_config = yaml.safe_load(f)
+
+       # Primary: SV cluster internal model (zero token cost)
+       opt_config = llm_config["dspy_optimization"]
+       lm = dspy.OpenAI(
+           model=opt_config["model"],
+           api_key=os.environ.get("OPENAI_API_KEY", "none"),
+           api_base=os.environ["OPENAI_API_BASE"]
+       )
        dspy.settings.configure(lm=lm, cache=True)
+
+       # For final validation — uncomment and run separately:
+       # val_config = llm_config["dspy_validation"]
+       # lm = dspy.OpenAI(model=val_config["model"],
+       #                  api_key=os.environ["OPENAI_API_KEY"])
 
   3. Define metric:
        def root_cause_accuracy(example, prediction, trace=None):
@@ -1263,7 +1277,10 @@ Script must:
 CRITICAL:
   Run this script ONCE.
   Record both numbers in docs/evaluation_results.md.
-  Estimated cost: ~$5 on GPT-4o-mini.
+  Zero token cost during optimization runs
+  (gpt-oss-20b on SV cluster — internal model).
+  Final validation on gpt-4o-mini estimated ~$5.
+  Run validation ONLY after full flow is finalized.
   DSPy caching is ON — repeated runs cost $0.
 
 Acceptance test:
