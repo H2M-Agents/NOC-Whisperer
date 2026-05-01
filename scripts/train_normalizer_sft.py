@@ -130,7 +130,6 @@ def train() -> float:
         model=model,
         args=build_sft_config(),
         train_dataset=train_dataset,
-        dataset_text_field="text",
         processing_class=tokenizer,
     )
     result = trainer.train()
