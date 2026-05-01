@@ -8,6 +8,25 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Tuple
 
+try:
+    import torch
+except Exception:
+    class _TorchShim:
+        """Fallback shim for local test environments without torch."""
+
+        float16 = "float16"
+
+    torch = _TorchShim()  # type: ignore[assignment]
+
+try:
+    from transformers import BitsAndBytesConfig
+except Exception:
+    class BitsAndBytesConfig:  # type: ignore[override]
+        """Fallback shim for local test environments without transformers."""
+
+        def __init__(self, **_: Any) -> None:
+            pass
+
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
 try:
@@ -72,7 +91,6 @@ def build_sft_config() -> Any:
             per_device_train_batch_size=1,
             gradient_accumulation_steps=4,
             learning_rate=2e-4,
-            fp16=True,
             logging_steps=1,
         )
     except Exception:
@@ -82,7 +100,6 @@ def build_sft_config() -> Any:
             "per_device_train_batch_size": 1,
             "gradient_accumulation_steps": 4,
             "learning_rate": 2e-4,
-            "fp16": True,
         }
 
 
@@ -123,7 +140,17 @@ def train() -> float:
     os.makedirs("checkpoints", exist_ok=True)
 
     tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
-    model = AutoModelForCausalLM.from_pretrained(BASE_MODEL)
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_compute_dtype=torch.float16,
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_quant_type="nf4",
+    )
+    model = AutoModelForCausalLM.from_pretrained(
+        BASE_MODEL,
+        quantization_config=bnb_config,
+        device_map="auto",
+    )
     model = get_peft_model(model, build_lora_config())
     raw_data = _load_jsonl(TRAIN_FILE)
     formatted_data = [

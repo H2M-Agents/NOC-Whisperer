@@ -38,7 +38,9 @@ def test_sft_config_parameters_match_spec() -> None:
     # Reduced from batch=4 to batch=1 for RTX 4060 Ti 16GB VRAM
     assert _get_attr(cfg, "per_device_train_batch_size") == 1
     assert _get_attr(cfg, "gradient_accumulation_steps") == 4
-    assert _get_attr(cfg, "fp16") is True
+    # fp16 removed from SFTConfig — precision handled by
+    # BitsAndBytesConfig(bnb_4bit_compute_dtype=torch.float16)
+    # 4-bit quantization loads model in ~5.5GB vs ~14GB fp32
     assert _get_attr(cfg, "learning_rate") == 2e-4
 
 
