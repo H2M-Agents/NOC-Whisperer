@@ -3,18 +3,35 @@ name = "noc-whisperer"
 version = "0.1.0"
 description = "Agentic alert correlation and incident synthesis"
 requires-python = ">=3.11"
-dependencies = []   # core deps go here as a list, e.g. ["httpx>=0.27", "pydantic>=2"]
-
-[dependency-groups]
-dev = [
+dependencies = [
+    "dspy-ai",
+    "openai",
+    "python-dotenv",
+    "aiosqlite",
+    "rich",
+    "textstat",
+    "requests",
+    "pandas",
+    "numpy",
+    "pyyaml",
+    "ollama",
     "pytest",
     "pytest-asyncio",
 ]
+
+[dependency-groups]
 gpu = [
-    "torch>=2.1.0",
-    "transformers>=4.40.0",
-    "peft>=0.10.0",
-    "trl>=0.8.0",
-    "accelerate>=0.29.0",
-    "bitsandbytes>=0.43.0",
+    "torch",
+    "transformers",
+    "peft",
+    "trl",
+    "accelerate",
+    "bitsandbytes",
+    "datasets",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest",
+    "pytest-asyncio",
 ]
