@@ -53,6 +53,7 @@ def build_sft_config() -> Any:
             num_train_epochs=3,
             per_device_train_batch_size=4,
             learning_rate=2e-4,
+            completion_only_loss=False,
             logging_steps=1,
         )
     except Exception:
@@ -61,6 +62,7 @@ def build_sft_config() -> Any:
             "num_train_epochs": 3,
             "per_device_train_batch_size": 4,
             "learning_rate": 2e-4,
+            "completion_only_loss": False,
         }
 
 
