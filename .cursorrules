@@ -73,3 +73,55 @@ session number, alert the user immediately before writing
 any code. Show the full reminder text and ask the user
 to confirm it is resolved before proceeding.
 
+All GPU training scripts must follow these requirements
+learned from train_normalizer_sft.py debugging:
+
+1. Load model with 4-bit quantization:
+   from transformers import BitsAndBytesConfig
+   bnb_config = BitsAndBytesConfig(
+       load_in_4bit=True,
+       bnb_4bit_compute_dtype=torch.float16,
+       bnb_4bit_use_double_quant=True,
+       bnb_4bit_quant_type="nf4"
+   )
+   model = AutoModelForCausalLM.from_pretrained(
+       MODEL_NAME,
+       quantization_config=bnb_config,
+       device_map="auto"
+   )
+
+2. Pre-format dataset before SFTTrainer:
+   formatted_data = [
+       {"text": f"{record['prompt']}\n{record['completion']}"}
+       for record in raw_data
+   ]
+   train_dataset = Dataset.from_list(formatted_data)
+
+3. SFTTrainer must NOT have these arguments:
+   - formatting_func
+   - dataset_text_field
+   - completion_only_loss
+
+4. SFTConfig must have:
+   per_device_train_batch_size=1
+   gradient_accumulation_steps=4
+   dataset_text_field="text"  (or omit — default is "text")
+   DO NOT set fp16=True — conflicts with 4-bit quant
+
+5. Set at top of script after imports:
+   os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
+6. Add Dataset import with fallback shim for Mac testing:
+   try:
+       from datasets import Dataset
+   except Exception:
+       class Dataset:
+           @staticmethod
+           def from_list(raw_data):
+               return raw_data
+
+7. GPU budget for RTX 4060 Ti 16GB:
+   SFT jobs:  ~30-60 minutes
+   RLVR jobs: ~60-90 minutes
+   All jobs must be submitted as background processes
+
