@@ -33,7 +33,12 @@ def test_lora_config_parameters_match_spec() -> None:
 def test_sft_config_parameters_match_spec() -> None:
     cfg = train_normalizer_sft.build_sft_config()
     assert _get_attr(cfg, "num_train_epochs") == 3
-    assert _get_attr(cfg, "per_device_train_batch_size") == 4
+    # Effective batch size = per_device_train_batch_size *
+    # gradient_accumulation_steps = 1 * 4 = 4
+    # Reduced from batch=4 to batch=1 for RTX 4060 Ti 16GB VRAM
+    assert _get_attr(cfg, "per_device_train_batch_size") == 1
+    assert _get_attr(cfg, "gradient_accumulation_steps") == 4
+    assert _get_attr(cfg, "fp16") is True
     assert _get_attr(cfg, "learning_rate") == 2e-4
 
 

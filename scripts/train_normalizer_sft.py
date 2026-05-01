@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Tuple
 
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
 try:
     from datasets import Dataset
 except Exception:
@@ -67,16 +69,20 @@ def build_sft_config() -> Any:
         return SFTConfig(
             output_dir=OUTPUT_DIR,
             num_train_epochs=3,
-            per_device_train_batch_size=4,
+            per_device_train_batch_size=1,
+            gradient_accumulation_steps=4,
             learning_rate=2e-4,
+            fp16=True,
             logging_steps=1,
         )
     except Exception:
         return {
             "output_dir": OUTPUT_DIR,
             "num_train_epochs": 3,
-            "per_device_train_batch_size": 4,
+            "per_device_train_batch_size": 1,
+            "gradient_accumulation_steps": 4,
             "learning_rate": 2e-4,
+            "fp16": True,
         }
 
 
