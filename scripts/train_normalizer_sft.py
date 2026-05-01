@@ -69,7 +69,6 @@ def build_sft_config() -> Any:
             num_train_epochs=3,
             per_device_train_batch_size=4,
             learning_rate=2e-4,
-            completion_only_loss=False,
             logging_steps=1,
         )
     except Exception:
@@ -78,7 +77,6 @@ def build_sft_config() -> Any:
             "num_train_epochs": 3,
             "per_device_train_batch_size": 4,
             "learning_rate": 2e-4,
-            "completion_only_loss": False,
         }
 
 
@@ -122,14 +120,18 @@ def train() -> float:
     model = AutoModelForCausalLM.from_pretrained(BASE_MODEL)
     model = get_peft_model(model, build_lora_config())
     raw_data = _load_jsonl(TRAIN_FILE)
-    train_dataset = Dataset.from_list(raw_data)
+    formatted_data = [
+        {"text": f"{record['prompt']}\n{record['completion']}"}
+        for record in raw_data
+    ]
+    train_dataset = Dataset.from_list(formatted_data)
 
     trainer = SFTTrainer(
         model=model,
         args=build_sft_config(),
         train_dataset=train_dataset,
+        dataset_text_field="text",
         processing_class=tokenizer,
-        formatting_func=lambda ex: [f"{ex['prompt']}\n{ex['completion']}"],
     )
     result = trainer.train()
     trainer.save_model(OUTPUT_DIR)
