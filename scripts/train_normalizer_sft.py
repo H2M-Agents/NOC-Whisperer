@@ -8,6 +8,22 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Tuple
 
+try:
+    from datasets import Dataset
+except Exception:
+    class Dataset:  # type: ignore[override]
+        """Fallback shim for local test environments without datasets."""
+
+        @staticmethod
+        def from_list(raw_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+            return raw_data
+
+hf_token = os.environ.get("HF_TOKEN", None)
+if hf_token:
+    from huggingface_hub import login
+
+    login(token=hf_token)
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -105,12 +121,13 @@ def train() -> float:
     tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
     model = AutoModelForCausalLM.from_pretrained(BASE_MODEL)
     model = get_peft_model(model, build_lora_config())
-    train_rows = _load_jsonl(TRAIN_FILE)
+    raw_data = _load_jsonl(TRAIN_FILE)
+    train_dataset = Dataset.from_list(raw_data)
 
     trainer = SFTTrainer(
         model=model,
         args=build_sft_config(),
-        train_dataset=train_rows,
+        train_dataset=train_dataset,
         processing_class=tokenizer,
         formatting_func=lambda ex: [f"{ex['prompt']}\n{ex['completion']}"],
     )
