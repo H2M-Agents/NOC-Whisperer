@@ -797,8 +797,8 @@ Acceptance test:
 
 ---
 
-### Session 14 — Fri May 1 — 1 hour
-**Task:** `scripts/train_normalizer_rlvr.py` — submit + `dspy_programs/alerts_to_incident.py`
+### Session 14 — Fri May 1 — Part 1 (Mac — no GPU needed)
+**Task:** `scripts/train_normalizer_rlvr.py` + DSPy signature + tests
 
 ```
 Files to create:
@@ -807,15 +807,16 @@ Files to create:
   dspy_programs/alerts_to_incident.py
   tests/test_alerts_to_incident.py
 
-train_normalizer_rlvr.py must:
+scripts/train_normalizer_rlvr.py must:
   1. Load from checkpoints/normalizer_sft_final (warm start)
   2. Implement normalizer_reward() from CONTEXT.md exactly
-  3. Run GRPOTrainer: G=8, 2 epochs
-  4. Log reward per epoch to logs/normalizer_rlvr_rewards.txt
-  5. Save to models/normalizer_final_locked/
-  6. Print baseline accuracy, final accuracy, delta
-
-Submit as background job (same pattern as Session 9)
+  3. Use GRPOTrainer: G=8, 2 epochs
+  4. Apply same 4-bit quantization pattern as train_normalizer_sft.py
+  5. Apply same GPU memory settings as train_normalizer_sft.py
+  6. Log reward per epoch to logs/normalizer_rlvr_rewards.txt
+  7. Save to models/normalizer_final_locked/
+  8. Print baseline accuracy, final accuracy, delta
+  9. Has if __name__ == '__main__' guard
 
 alerts_to_incident.py must:
   - Define AlertsToIncident signature (all fields from CONTEXT.md)
@@ -828,11 +829,56 @@ alerts_to_incident.py must:
       class DSPyCorrelator:
         def predict(self, alert_cluster, topology_context) -> dict
 
+tests/test_alerts_to_incident.py scope:
+  Import and config validation only — no API calls.
+  Tests must verify:
+    - AlertsToIncident signature importable
+    - All 5 output fields present in signature
+    - All 2 input fields present in signature
+    - DSPyCorrelator and BaselineCorrelator importable
+    - Script has if __name__ == '__main__' guard
+
 Acceptance test:
-  from dspy_programs.alerts_to_incident import AlertsToIncident
-  import dspy
-  prog = dspy.ChainOfThought(AlertsToIncident)
-  print("DSPy signature OK")
+  .venv/bin/python3 -m pytest tests/test_alerts_to_incident.py -v
+  All tests pass — no GPU or API required.
+  .venv/bin/python3 -m pytest tests/ -v
+  Full suite passes.
+
+Commit: "train: normalizer RLVR script + DSPy signature + tests (Part 1)"
+```
+
+### Session 14 — Fri May 1 — Part 2 (GPU machine)
+**Task:** Submit RLVR training job to GPU machine
+
+```
+REMINDER-003 must be resolved before this part.
+
+Steps:
+  1. Verify SFT checkpoint exists:
+       ls -la checkpoints/normalizer_sft_final/
+
+  2. git pull to get latest script
+
+  3. Submit RLVR job:
+       mkdir -p logs pids
+       nohup python3 scripts/train_normalizer_rlvr.py \
+         > logs/normalizer_rlvr.log 2>&1 &
+       echo $! > pids/normalizer_rlvr.pid
+
+  4. Verify job started:
+       sleep 20
+       tail -20 logs/normalizer_rlvr.log
+
+  5. Expected runtime: ~60-90 minutes on RTX 4060 Ti
+
+Next morning check:
+  tail -20 logs/normalizer_rlvr.log
+  ls -la models/normalizer_final_locked/
+
+Record in docs/evaluation_results.md:
+  Initial reward, final reward, delta
+
+Commit: "train: normalizer RLVR complete — model locked"
 ```
 
 ---
@@ -1710,7 +1756,8 @@ Session 10: "feat: node exporter MCP tool + mock + tests"
 Session 11: "data: normalizer SFT training data preparation"
 Session 12: "train: submit normalizer SFT job"
 Session 13: "feat: triage agent implementation"
-Session 14: "train: submit normalizer RLVR job + DSPy signature"
+Session 14 (Part 1): "train: normalizer RLVR script + DSPy signature + tests (Part 1)"
+Session 14 (Part 2): "train: normalizer RLVR complete — model locked"
 Session 15: "feat: correlation agent + lock normalizer model"
 Session 16: "train: communications SFT data + submit job"
 Session 17: "feat: incident store SQLite implementation"
