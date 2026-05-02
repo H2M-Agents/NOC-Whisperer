@@ -16,6 +16,9 @@ Coding standards:
 - Handle all external API calls with try/except — return [] on failure, never crash
 - Load config from yaml files — never hardcode values
 - Load API keys from .env — never hardcode credentials
+- Never use datetime.utcnow() — it is deprecated in Python 3.11+.
+  Always use datetime.now(timezone.utc) instead.
+  Ensure timezone is imported: from datetime import datetime, timezone
 
 Testing:
 - Every session ends with the acceptance test passing
