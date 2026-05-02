@@ -64,14 +64,14 @@ def test_mock_returns_empty_by_default() -> None:
 
 
 def test_mock_returns_injected_alerts() -> None:
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     from adapters.canonical_alert import CanonicalAlert
     from mcp_tools.mocks.mock_prometheus_mcp import MockPrometheusMCP
 
     alert = CanonicalAlert(
         alert_id="test-001",
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         domain="service_mesh",
         severity="critical",
         device="cart",

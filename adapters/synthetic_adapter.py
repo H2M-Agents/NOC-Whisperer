@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from adapters.canonical_alert import CanonicalAlert
 
@@ -15,7 +15,7 @@ class SyntheticAdapter:
         _ = raw_dict
         return CanonicalAlert(
             alert_id="synthetic-alert-1",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             domain="infrastructure",
             severity="major",
             device="synthetic-device",

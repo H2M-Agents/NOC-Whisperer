@@ -43,14 +43,14 @@ def test_mock_returns_empty_by_default() -> None:
 
 
 def test_mock_returns_injected_alerts() -> None:
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     from adapters.canonical_alert import CanonicalAlert
     from mcp_tools.mocks.mock_node_exporter_mcp import MockNodeExporterMCP
 
     alert = CanonicalAlert(
         alert_id="test-node-001",
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         domain="infrastructure",
         severity="critical",
         device="node-a",

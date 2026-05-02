@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import random
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List, Optional
 
@@ -42,7 +42,7 @@ class ScenarioDrivenGenerator:
         Correlated alerts share the same incident_id UUID.
         """
         if base_time is None:
-            base_time = datetime.utcnow()
+            base_time = datetime.now(timezone.utc)
 
         incident_id = str(uuid.UUID(int=random.getrandbits(128)))
         correlated_alerts: List[CanonicalAlert] = []
@@ -91,7 +91,7 @@ class ScenarioDrivenGenerator:
 
         for i in range(num_incidents):
             scenario = scenario_pool[i % len(scenario_pool)]
-            base_time = datetime.utcnow() + timedelta(minutes=i)
+            base_time = datetime.now(timezone.utc) + timedelta(minutes=i)
             dataset.append(
                 self.generate_storm(scenario=scenario, noise_ratio=noise_ratio, base_time=base_time)
             )
