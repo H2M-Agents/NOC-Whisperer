@@ -83,6 +83,32 @@
 
 ---
 
+## REMINDER-005 — RLVR Training GPU Constraint
+**Status:** OPEN
+**Blocking:** Session 14 Part 2 — RLVR training job
+**Action required:**
+  Current GPU (RTX 4060 Ti) estimated runtime: 7+ hours
+  SV cluster 2-hour job limit makes this infeasible.
+  Options being explored:
+    1. Procure better GPU (A100 40GB or better)
+    2. Reduce G=8 to G=2 (not preferred — capstone spec)
+    3. Reduce dataset to 50 examples + 1 epoch
+       (script already updated for this option)
+
+  Script is ready: scripts/train_normalizer_rlvr.py
+  Just needs GPU with either:
+    - No time limit, OR
+    - Runtime under 2 hours (needs A100 or better)
+
+**What to do when resolved:**
+  1. SSH to new GPU machine
+  2. git pull
+  3. python3 scripts/train_normalizer_rlvr.py
+  4. Record results in docs/evaluation_results.md
+  5. Mark RESOLVED
+
+---
+
 ## How To Add New Reminders
 
 Copy this template:
