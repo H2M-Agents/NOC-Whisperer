@@ -62,15 +62,15 @@ noc_whisperer/
 ├── agents/
 │   ├── normalizer_agent.py       # RLVR fine-tuned — domain + severity classification
 │   ├── triage_agent.py           # Rule-based router — new vs existing incident
-│   ├── correlation_agent.py      # DSPy AlertsToIncident — root cause reasoning
-│   └── reconciler_agent.py      # ReAct loop — merge/split/close decisions
+│   └── correlation_agent.py      # DSPy AlertsToIncident — root cause reasoning
 ├── communications/
 │   └── communications_agent.py   # RLVR fine-tuned — NOC advisory generation
 ├── orchestrator/
-│   ├── master_orchestrator.py    # Two concurrent asyncio loops
+│   ├── incident_store.py         # SQLite shared state
 │   ├── streaming_pipeline.py     # Per-alert: Normalizer→Triage→Correlation→Store
+│   ├── reconciler_agent.py       # ReAct loop — merge/split/close decisions
 │   ├── batch_reconciler.py       # Scheduled: Reconciler→Communications
-│   └── incident_store.py         # SQLite shared state
+│   └── master_orchestrator.py    # Two concurrent asyncio loops (planned)
 ├── dspy_programs/
 │   ├── alerts_to_incident.py     # AlertsToIncident signature definition
 │   └── alerts_to_incident_compiled.json  # Saved after optimization run
@@ -278,7 +278,7 @@ Key method:
 
 ### Agent 4 — Reconciler Agent
 ```
-File:   agents/reconciler_agent.py
+File:   orchestrator/reconciler_agent.py
 Type:   ReAct loop — LLM reasoning with tool calls
 Model:  GPT-4o-mini
 Fires:  Every 30s (demo) / 900s (production) — config/reconciler_config.yaml

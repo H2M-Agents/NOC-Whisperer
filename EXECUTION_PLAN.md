@@ -1191,11 +1191,11 @@ Acceptance test:
 ---
 
 ### Session 20 — Wed May 6 — 1 hour
-**Task:** `agents/reconciler_agent.py`
+**Task:** `orchestrator/reconciler_agent.py`
 
 ```
 Files to create:
-  agents/reconciler_agent.py
+  orchestrator/reconciler_agent.py
   tests/test_reconciler_agent.py
 
 Must implement:
