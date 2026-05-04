@@ -83,48 +83,6 @@
 
 ---
 
-## REMINDER-005 — RLVR Training GPU Constraint
-**Status:** OPEN — ESCALATED
-**Blocking:** Session 14 Part 2, Session 18 Part 2
-**Last updated:** Sun May 3
-**Situation:**
-  Communications SFT is no longer a dependency — Session 16 Part 2 complete.
-
-  Completed GPU jobs:
-    - Normalizer SFT     ✅ RTX 4060 Ti — loss 0.541
-    - Communications SFT ✅ RTX 4090    — loss 0.250
-
-  Still pending (need better GPU):
-    - Normalizer RLVR    ❌ needs GPU with no 2-hour limit
-    - Communications RLVR ❌ needs GPU with no 2-hour limit
-
-  Note: If RTX 4090 is still available, Communications RLVR
-  may fit within time limits — estimated ~1-2 hours.
-  Prioritize Normalizer RLVR first as it unlocks the
-  normalizer agent for evaluation.
-
-**Options still open:**
-  1. Find GPU with no time limit (A100, H100, RTX 3090+)
-  2. Use reduced dataset (50 examples, 1 epoch, ~54 min)
-     Script already updated for this option
-  3. Use Google Colab Pro+ (~$12/month, A100 access)
-  4. Use Lambda Labs (~$1.10/hr for A100)
-  5. Skip RLVR entirely — use SFT model only for demo
-     (lower accuracy but still functional)
-
-**Deadline:** Must resolve by Fri May 9
-  to have models ready for evaluation on Sat May 10
-
-**What to do when resolved:**
-  1. SSH to GPU machine
-  2. git pull
-  3. python3 scripts/train_normalizer_rlvr.py
-  4. python3 scripts/train_communications_rlvr.py
-  5. Record results in docs/evaluation_results.md
-  6. Mark RESOLVED
-
----
-
 ## How To Add New Reminders
 
 Copy this template:
@@ -143,4 +101,13 @@ Copy this template:
 
 ## Resolved Reminders
 
-(Move resolved items here with resolution date)
+## REMINDER-005 — RLVR Training GPU Constraint
+**Status:** RESOLVED — Sun May 3
+
+  All four training jobs complete:
+    - Normalizer SFT      ✅ train_loss=0.541, avg_loss=0.917
+    - Communications SFT  ✅ train_loss=0.250, avg_loss=1.071
+    - Normalizer RLVR     ✅ train_loss=0.034 (reward ranged 0.2-1.0)
+    - Communications RLVR ✅ train_loss=-0.001, compliance=0.8646
+  Models saved to models/ on GPU machine
+  To be copied to Mac before demo day
