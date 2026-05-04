@@ -59,7 +59,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 BASE_MODEL = "Qwen/Qwen2.5-7B-Instruct"
 SFT_ADAPTER_DIR = "checkpoints/normalizer_sft_final/"
-OUTPUT_DIR = "models/normalizer_final_locked/"
+OUTPUT_DIR = str(PROJECT_ROOT / "models" / "normalizer_final_locked")
 TRAIN_FILE = "data/normalizer_sft_train.jsonl"
 REWARD_LOG = "logs/normalizer_rlvr_rewards.txt"
 
@@ -112,6 +112,7 @@ def build_grpo_config() -> Any:
             gradient_accumulation_steps=8,
             learning_rate=5e-6,
             logging_steps=1,
+            save_steps=50,
             report_to="none",
         )
     except Exception:
@@ -123,6 +124,7 @@ def build_grpo_config() -> Any:
             "gradient_accumulation_steps": 8,
             "learning_rate": 5e-6,
             "logging_steps": 1,
+            "save_steps": 50,
         }
 
 
