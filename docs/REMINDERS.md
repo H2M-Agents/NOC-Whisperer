@@ -88,12 +88,20 @@
 **Blocking:** Session 14 Part 2, Session 18 Part 2
 **Last updated:** Sun May 3
 **Situation:**
-  Better GPU procurement failed.
-  RTX 4060 Ti estimated runtime: 7+ hours per RLVR job
-  SV cluster 2-hour limit makes this infeasible.
-  Two RLVR jobs needed:
-    1. Normalizer RLVR  (Session 14 Part 2)
-    2. Communications RLVR (Session 18 Part 2)
+  Communications SFT is no longer a dependency — Session 16 Part 2 complete.
+
+  Completed GPU jobs:
+    - Normalizer SFT     ✅ RTX 4060 Ti — loss 0.541
+    - Communications SFT ✅ RTX 4090    — loss 0.250
+
+  Still pending (need better GPU):
+    - Normalizer RLVR    ❌ needs GPU with no 2-hour limit
+    - Communications RLVR ❌ needs GPU with no 2-hour limit
+
+  Note: If RTX 4090 is still available, Communications RLVR
+  may fit within time limits — estimated ~1-2 hours.
+  Prioritize Normalizer RLVR first as it unlocks the
+  normalizer agent for evaluation.
 
 **Options still open:**
   1. Find GPU with no time limit (A100, H100, RTX 3090+)

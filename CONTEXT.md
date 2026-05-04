@@ -476,12 +476,11 @@ grpo_args = GRPOConfig(
     num_train_epochs=2,
 )
 
-# GPU budget (RTX 5090):
-# Normalizer SFT:       ~2 hours
-# Normalizer RLVR:      ~3 hours
-# Communications SFT:   ~1 hour
-# Communications RLVR:  ~2 hours
-# Total:                ~8-10 hours
+# GPU budget (actual hardware used):
+# Normalizer SFT:       RTX 4060 Ti — 433 seconds
+# Communications SFT:   RTX 4090    — 57 seconds
+# Normalizer RLVR:      TBD — pending better GPU
+# Communications RLVR:  TBD — pending better GPU
 ```
 
 ---

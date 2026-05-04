@@ -36,9 +36,16 @@
 ### Communications Agent — SFT (Session 16)
 | Metric | Value |
 |---|---|
-| Initial loss | TBD |
-| Final loss | TBD |
-| Token accuracy | TBD |
+| Base model | Qwen/Qwen2.5-7B-Instruct |
+| Initial loss | 3.001 |
+| Final loss | 0.250 |
+| Average train loss | 1.071 |
+| Token accuracy (end of training) | 94.2% |
+| Training time | 57 seconds |
+| GPU | RTX 4090 |
+| Epochs | 3 |
+| Batch size | 1 (grad_accum=4, effective=4) |
+| Quantization | 4-bit NF4 via bitsandbytes |
 | Checkpoint | checkpoints/communications_sft_final/ |
 
 ### Communications Agent — RLVR (Session 18)

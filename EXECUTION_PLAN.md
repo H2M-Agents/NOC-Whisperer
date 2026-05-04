@@ -937,7 +937,7 @@ Acceptance test:
 
 ---
 
-### Session 16 — Sun May 3 — 1.5 hours
+### Session 16 — Sun May 3 — Part 1 (Mac — scripts + tests)
 **Task:** `scripts/prepare_communications_sft.py` + `scripts/train_communications_sft.py`
 
 ```
@@ -987,6 +987,17 @@ train_communications_sft.py:
 Acceptance test:
   python scripts/prepare_communications_sft.py
   wc -l data/communications_sft_train.jsonl  # should print 80
+```
+
+### Session 16 — Sun May 3 — Part 2 (GPU machine)
+**Task:** Submit Communications SFT training job to GPU machine
+
+```
+STATUS: COMPLETE
+Communications SFT training completed Sun May 3.
+Final loss: 0.250, accuracy: 94.2%, runtime: 57 seconds
+GPU: RTX 4090
+Checkpoint saved: checkpoints/communications_sft_final/
 ```
 
 ---
