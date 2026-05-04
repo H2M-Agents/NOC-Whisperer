@@ -26,12 +26,14 @@
 | Metric | Value |
 |---|---|
 | Base checkpoint | checkpoints/normalizer_sft_final/ |
-| Initial reward | TBD |
-| Final reward | TBD |
-| Domain accuracy baseline | TBD |
-| Domain accuracy after RLVR | TBD |
-| Delta | TBD |
-| Checkpoint | models/normalizer_final_locked/ |
+| Final train loss | 0.034 |
+| Training time | 77 minutes (4646 seconds) |
+| Total steps | 400 |
+| Epochs | 2 |
+| GPU | RTX 4090 |
+| Initial reward | 0.200 |
+| Final reward | 0.350 (last step average) |
+| Model saved | models/normalizer_final_locked/ |
 
 ### Communications Agent — SFT (Session 16)
 | Metric | Value |
