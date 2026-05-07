@@ -61,26 +61,48 @@ def _read_json(path: str) -> List[Dict[str, Any]]:
     return [dict(item) for item in raw]
 
 
-def load_val_set(path: str = VAL_FILE) -> List[Dict[str, Any]]:
-    """Load validation incidents (default: data/val.json)."""
-    return _read_json(path)
+def _incident_to_example(incident: Dict[str, Any]) -> Any:
+    """Convert one incident dict to a DSPy Example with explicit input keys."""
+    scenario_name = str(incident.get("scenario_name", "Unknown scenario"))
+    ground_truth = dict(incident.get("ground_truth", {}))
+    example = dspy.Example(
+        alerts=list(incident.get("alerts", [])),
+        topology_context={},
+        root_cause_device=str(ground_truth.get("root_cause_device", "unknown")),
+        incident_title=f"Incident: {scenario_name}",
+        affected_services=list(ground_truth.get("affected_services", [])),
+        confidence=0.9,
+        recommended_action="Investigate root cause",
+        ground_truth=ground_truth,
+    ).with_inputs("alerts", "topology_context")
+    return example
 
 
-def load_train_set(path: str = TRAIN_FILE) -> List[Dict[str, Any]]:
-    """Load training incidents (default: data/train.json)."""
-    return _read_json(path)
+def load_val_set(path: str = VAL_FILE) -> List[Any]:
+    """Load validation incidents and convert each row to a DSPy Example."""
+    data = _read_json(path)
+    return [_incident_to_example(incident) for incident in data]
 
 
-def root_cause_accuracy(example: Dict[str, Any], prediction: Any, trace: Any = None) -> bool:
+def load_train_set(path: str = TRAIN_FILE) -> List[Any]:
+    """Load training incidents and convert each row to a DSPy Example."""
+    data = _read_json(path)
+    return [_incident_to_example(incident) for incident in data]
+
+
+def root_cause_accuracy(example: Any, prediction: Any, trace: Any = None) -> bool:
     """Return True when predicted and ground-truth root cause devices match."""
     _ = trace
-    gt = str(example["ground_truth"]["root_cause_device"]).lower()
+    if hasattr(example, "root_cause_device"):
+        expected = str(getattr(example, "root_cause_device", "")).lower()
+    else:
+        expected = str(example["ground_truth"]["root_cause_device"]).lower()
     if isinstance(prediction, dict):
         pred_value = prediction.get("root_cause_device", "")
     else:
         pred_value = getattr(prediction, "root_cause_device", "")
-    pred = str(pred_value).lower()
-    return pred == gt
+    predicted = str(pred_value).lower()
+    return predicted == expected
 
 
 def load_llm_config(path: str = LLM_CONFIG) -> Dict[str, Any]:
@@ -107,16 +129,22 @@ def configure_dspy_lm(config: Dict[str, Any]) -> Any:
     return lm
 
 
-def evaluate(module: Any, dataset: Iterable[Dict[str, Any]], metric: Any) -> float:
+def evaluate(module: Any, dataset: Iterable[Any], metric: Any) -> float:
     """Compute mean metric score over dataset without external evaluator dependency."""
     rows = list(dataset)
     if not rows:
         return 0.0
     correct = 0
     for row in rows:
+        if hasattr(row, "alerts"):
+            alerts = getattr(row, "alerts")
+            topo = getattr(row, "topology_context", {})
+        else:
+            alerts = row.get("alerts", [])
+            topo = row.get("topology_context", {})
         prediction = module(
-            alert_cluster=row.get("alerts", []),
-            topology_context=row.get("topology_context", {}),
+            alert_cluster=alerts,
+            topology_context=topo,
         )
         if metric(row, prediction):
             correct += 1
