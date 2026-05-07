@@ -73,6 +73,43 @@ See config/llm_endpoints.yaml for placeholder structure.
 
 ---
 
+## REMINDER-006 — run_evaluation.py Partially Complete
+**Status:** OPEN — DEFERRED
+**Blocking:** Nothing critical — deferred in favor of run_demo.py
+**Last updated:** Wed May 6 2026
+
+**Current state:**
+  Script written and tests passing (204/204) ✅
+  Runs without error and produces output ✅
+  BUT metrics use heuristics not real agents:
+    - Root cause: BaselineCorrelator only (not DSPyCorrelator)
+    - Domain/severity: source_system heuristic (not NormalizerAgent)
+    - Latency: stub timings (not real agent calls)
+    - Advisory: CommunicationsAgent.generate() IS real ✅
+
+**What needs to be done:**
+  Before calling this complete, fix evaluate_root_cause()
+  to call DSPyCorrelator and evaluate_domain_severity()
+  to call NormalizerAgent.
+
+  Must run on ram-vm-1 (not Mac) to use fine-tuned models.
+
+  Steps when ready:
+    1. Diagnose agent constructor requirements first:
+       Read normalizer_agent.py, triage_agent.py,
+       correlation_agent.py and report __init__ signatures
+    2. Fix evaluate_root_cause() to use DSPyCorrelator
+    3. Fix evaluate_domain_severity() to use NormalizerAgent
+    4. Run on ram-vm-1: python3 scripts/run_evaluation.py
+    5. Update docs/evaluation_results.md with real numbers
+
+**Priority:** Low — address after run_demo.py is working
+**Target:** May 12 if time permits
+**Fallback:** Use docs/evaluation_results.md training metrics
+             for presentation — these are real numbers
+
+---
+
 ## How To Add New Reminders
 
 Copy this template:
