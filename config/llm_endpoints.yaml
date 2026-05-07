@@ -15,12 +15,14 @@ development:
 dspy_optimization:
   provider: sv_cluster
   base_url: ${OPENAI_API_BASE}
-  model: gpt-oss-20b
+  model: ${DSPy_MODEL}
   api_key: ${OPENAI_API_KEY}
   notes: >
     OpenAI-compatible REST API served on SV cluster.
-    Set OPENAI_API_BASE in .env to the SV cluster endpoint.
-    Confirm exact model name and auth requirements with reviewer.
+    Model ID includes provider prefix: openai/gpt-oss-20b
+    Max context: 131072 tokens
+    Confirmed live: Wed May 6 2026
+    Real values stored in .env — never commit .env
 
 # DSPy validation — run after flow is finalized
 # Validates that optimized prompts transfer to paid models

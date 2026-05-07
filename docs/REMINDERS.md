@@ -7,33 +7,12 @@
 ---
 
 ## REMINDER-001 — SV Cluster Configuration
-**Status:** OPEN
-**Blocking:** Session 22 (optimize_dspy.py) — due Fri May 8
-**Action required:** Confirm the following with your reviewer
-  before starting Session 22:
+**Status:** RESOLVED — Wed May 6 2026
 
-  1. Exact SV cluster endpoint URL
-     → Goes into OPENAI_API_BASE in .env
-     → Example: http://SV_CLUSTER_IP:PORT/v1
-
-  2. Exact model name
-     → Currently assumed: gpt-oss-20b
-     → Confirm this is the correct model string
-
-  3. API key requirement
-     → Does the SV cluster require an API key?
-     → If no: set OPENAI_API_KEY=none in .env
-     → If yes: get the internal key from reviewer
-
-  4. API format
-     → Confirm it is OpenAI-compatible REST API
-     → dspy.OpenAI() assumes this format
-     → If different: a custom DSPy LM adapter may be needed
-
-**What to do when resolved:**
-  1. Update .env with OPENAI_API_BASE and OPENAI_API_KEY
-  2. Update config/llm_endpoints.yaml dspy_optimization.base_url
-  3. Mark this reminder as RESOLVED
+SV cluster confirmed live and reachable from Mac.
+Real endpoint and credentials stored in .env only.
+DSPy config uses dspy.LM with openai/ provider prefix.
+See config/llm_endpoints.yaml for placeholder structure.
 
 ---
 
