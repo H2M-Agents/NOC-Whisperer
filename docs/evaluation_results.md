@@ -80,8 +80,14 @@
 ### Correlation Agent (DSPy)
 | Metric | Baseline | Optimized |
 |---|---|---|
-| Root cause accuracy | TBD | TBD |
-| Delta | TBD | TBD |
+| Root cause accuracy | 100.0% (BaselineCorrelator) | 96.7% (gpt-oss-20b) |
+| Bootstrap traces | — | 8 |
+| Val set size | — | 30 examples |
+| Delta | — | -3.3% vs baseline |
+| Model | — | gpt-oss-20b on SV cluster |
+| Compiled program | — | dspy_programs/alerts_to_incident_compiled.json |
+
+Baseline 100% reflects BaselineCorrelator heuristic mode which uses ground truth labels directly. Optimized 96.7% reflects actual LLM inference on unseen val examples — this is the meaningful accuracy number for demo day.
 
 ### Communications Agent
 | Metric | Base | RLVR |
