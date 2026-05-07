@@ -17,14 +17,25 @@ See config/llm_endpoints.yaml for placeholder structure.
 ---
 
 ## REMINDER-002 — VM Docker Compose Setup
-**Status:** OPEN
-**Blocking:** Session 25 (live OTel integration) — due Mon May 11
+**Status:** OPEN — ESCALATED
+**Last updated:** Wed May 6 2026
+**Blocking:** Session 25 (live OTel integration)
+**Deadline:** Must resolve by Fri May 8
+**Situation:**
+  VM confirmed: ada-vm-1 with Docker 29.4.2, 94GB RAM, 24 CPUs.
+  Blocker: bmammen user not in docker group.
+  `sudo usermod -aG docker bmammen` requires admin/sudo access.
+
 **Action required:**
-  1. Get Docker Compose V2 plugin installed on VM
-     sudo apt-get install -y docker-compose-plugin
-  2. Run Session 7 OTel environment setup
-  3. Note the VM IP address
-  4. Update config/mcp_endpoints.yaml with VM IP
+  1. Ask VM admin to run:
+       sudo usermod -aG docker bmammen
+  2. Then verify with:
+       docker ps
+
+**Fallback if unresolved by May 10:**
+  Run demo with synthetic alerts via fault_scenarios.py.
+  All agents run normally — only alert source is synthetic.
+  Demo still fully functional.
 
 **What to do when resolved:**
   1. Complete Session 7 checklist
