@@ -93,16 +93,66 @@ class BaselineCorrelator:
 
 
 class DSPyCorrelator:
-    """DSPy-style correlator stub; loads compiled JSON when present."""
+    """DSPy correlator that loads and runs a compiled program when available."""
 
-    def __init__(self, compiled_path: str | None = None) -> None:
-        """Store optional path to compiled DSPy program JSON."""
-        default_path = Path(__file__).resolve().with_name("alerts_to_incident_compiled.json")
-        self._compiled_path = Path(compiled_path) if compiled_path else default_path
+    def __init__(self) -> None:
+        self._compiled_path = Path(__file__).parent / "alerts_to_incident_compiled.json"
+        self._program = None
+        self._load_program()
+
+    def _load_program(self) -> None:
+        if self._compiled_path.is_file():
+            try:
+                import dspy
+                import os
+
+                from dotenv import load_dotenv
+
+                load_dotenv()
+
+                api_base = os.environ.get("OPENAI_API_BASE")
+                api_key = os.environ.get("OPENAI_API_KEY")
+                model = os.environ.get("DSPy_MODEL", "openai/gpt-oss-20b")
+
+                if not api_base or not api_key:
+                    print(
+                        "DSPyCorrelator: OPENAI_API_BASE or OPENAI_API_KEY "
+                        "not set — skipping compiled program load. "
+                        "Set these in .env to enable optimized inference."
+                    )
+                    self._program = None
+                    return
+
+                lm = dspy.LM(
+                    f"openai/{model}",
+                    api_base=api_base,
+                    api_key=api_key,
+                    temperature=0.0,
+                )
+                dspy.configure(lm=lm)
+
+                program = dspy.ChainOfThought(AlertsToIncident)
+                program.load(str(self._compiled_path))
+                self._program = program
+                print("DSPyCorrelator: compiled program loaded successfully")
+            except Exception as e:
+                print(f"DSPyCorrelator: failed to load program: {e}")
+                self._program = None
 
     def predict(self, alert_cluster: Any, topology_context: Any) -> Dict[str, str]:
-        """Predict incident fields; falls back to baseline when no compiled program."""
-        if self._compiled_path.is_file():
-            _ = self._compiled_path.read_text(encoding="utf-8")
-            return BaselineCorrelator().predict(alert_cluster, topology_context)
+        if self._program is not None:
+            try:
+                result = self._program(
+                    alert_cluster=alert_cluster,
+                    topology_context=topology_context,
+                )
+                return {
+                    "root_cause_device": result.root_cause_device,
+                    "incident_title": result.incident_title,
+                    "affected_services": result.affected_services,
+                    "confidence": result.confidence,
+                    "recommended_action": result.recommended_action,
+                }
+            except Exception:
+                pass
         return BaselineCorrelator().predict(alert_cluster, topology_context)
