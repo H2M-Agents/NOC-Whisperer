@@ -65,8 +65,10 @@ def _incident_to_example(incident: Dict[str, Any]) -> Any:
     """Convert one incident dict to a DSPy Example with explicit input keys."""
     scenario_name = str(incident.get("scenario_name", "Unknown scenario"))
     ground_truth = dict(incident.get("ground_truth", {}))
+    alerts_payload = list(incident.get("alerts", []))
     example = dspy.Example(
-        alerts=list(incident.get("alerts", [])),
+        alert_cluster=alerts_payload,
+        alerts=alerts_payload,
         topology_context={},
         root_cause_device=str(ground_truth.get("root_cause_device", "unknown")),
         incident_title=f"Incident: {scenario_name}",
@@ -74,7 +76,7 @@ def _incident_to_example(incident: Dict[str, Any]) -> Any:
         confidence=0.9,
         recommended_action="Investigate root cause",
         ground_truth=ground_truth,
-    ).with_inputs("alerts", "topology_context")
+    ).with_inputs("alert_cluster", "topology_context")
     return example
 
 
