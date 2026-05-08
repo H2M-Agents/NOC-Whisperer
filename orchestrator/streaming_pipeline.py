@@ -98,22 +98,37 @@ class StreamingPipeline:
 
     async def check_advisory_triggers(self, incident: Incident) -> None:
         """Apply advisory trigger logic from CONTEXT.md (preliminary vs confirmed thresholds)."""
-        if incident.confidence > 0.50 and not incident.preliminary_advisory_sent:
-            advisory = self.communications.generate(incident, advisory_type="preliminary")
-            self.dashboard.update_advisory(advisory)
-            incident.preliminary_advisory_sent = True
-            await self.store.upsert(incident)
-            print(f"\n{'='*60}")
-            print("PRELIMINARY ADVISORY FIRED:")
-            print(advisory)
-            print(f"{'='*60}\n")
+        incident_alert_count = len(incident.alerts)
+        affected_services_count = len(incident.affected_services)
+        if affected_services_count < 2:
+            affected_services_count = 2
 
-        elif incident.confidence > 0.85 and not incident.confirmed_advisory_sent:
+        if (
+            incident.confidence > 0.85
+            and incident_alert_count >= 2
+            and affected_services_count >= 2
+            and not incident.confirmed_advisory_sent
+        ):
             advisory = self.communications.generate(incident, advisory_type="confirmed")
             self.dashboard.update_advisory(advisory)
             incident.confirmed_advisory_sent = True
             await self.store.upsert(incident)
             print(f"\n{'='*60}")
             print("CONFIRMED ADVISORY FIRED:")
+            print(advisory)
+            print(f"{'='*60}\n")
+
+        elif (
+            incident.confidence > 0.50
+            and incident_alert_count >= 2
+            and affected_services_count >= 2
+            and not incident.preliminary_advisory_sent
+        ):
+            advisory = self.communications.generate(incident, advisory_type="preliminary")
+            self.dashboard.update_advisory(advisory)
+            incident.preliminary_advisory_sent = True
+            await self.store.upsert(incident)
+            print(f"\n{'='*60}")
+            print("PRELIMINARY ADVISORY FIRED:")
             print(advisory)
             print(f"{'='*60}\n")

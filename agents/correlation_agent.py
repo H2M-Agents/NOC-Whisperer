@@ -77,7 +77,10 @@ class CorrelationAgent:
             incident_id = str(uuid.uuid4())
             created_at = decision.alert.timestamp
 
-        self.alert_buffer.append(decision.alert)
+        # Only add non-noise alerts to buffer
+        # Noise alerts should not seed future incident clusters
+        if getattr(decision.alert, "source_system", "") != "synthetic_noise":
+            self.alert_buffer.append(decision.alert)
 
         devices = [alert.device for alert in cluster]
         topology_context = self.topology.get_topology_context(devices)
