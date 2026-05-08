@@ -20,8 +20,14 @@ class BatchReconciler:
         while True:
             try:
                 open_incidents = self.store.get_open_incidents()
+                if open_incidents:
+                    print(f"\n[ReAct] Reconciler running on {len(open_incidents)} open incidents...")
                 if len(open_incidents) > 1:
                     decisions = self.reconciler.reconcile(open_incidents)
+                    if decisions:
+                        print(f"[ReAct] {len(decisions)} decisions made")
+                        for d in decisions:
+                            print(f"  → {d.action}: {d.reasoning}")
                     for decision in decisions:
                         if decision.action == "close":
                             # mark closed in store

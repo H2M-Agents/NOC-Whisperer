@@ -83,3 +83,10 @@ def test_generate_display_returns_without_error() -> None:
     display = dash.generate_display()
     assert display is not None
     print("Dashboard OK")
+
+
+def test_stop_sets_flag() -> None:
+    dash = NOCDashboard()
+    assert dash._stop is False
+    dash.stop()
+    assert dash._stop is True

@@ -39,6 +39,8 @@ class StreamingPipeline:
                 raw_alerts.extend(self._alerts_from_tool(tool))
 
             new_alerts = [a for a in raw_alerts if self._alert_id(a) not in self.seen_alert_ids]
+            if new_alerts:
+                print(f"\n[Streaming] {len(new_alerts)} new alerts received")
 
             for alert in new_alerts:
                 self.seen_alert_ids.add(self._alert_id(alert))
@@ -83,6 +85,12 @@ class StreamingPipeline:
         canonical = self._canonicalize(raw_alert)
         decision = self.triage.route(canonical)
         incident = self.correlation.correlate(decision)
+        print(
+            f"  Alert: {canonical.device} "
+            f"[{canonical.domain}/{canonical.severity}] "
+            f"→ {decision.action} "
+            f"(confidence: {incident.confidence:.2f})"
+        )
         await self.store.upsert(incident)
         self.dashboard.update_alert_stream(canonical)
         self.dashboard.update_incident_board(incident)
@@ -95,9 +103,17 @@ class StreamingPipeline:
             self.dashboard.update_advisory(advisory)
             incident.preliminary_advisory_sent = True
             await self.store.upsert(incident)
+            print(f"\n{'='*60}")
+            print("PRELIMINARY ADVISORY FIRED:")
+            print(advisory)
+            print(f"{'='*60}\n")
 
         elif incident.confidence > 0.85 and not incident.confirmed_advisory_sent:
             advisory = self.communications.generate(incident, advisory_type="confirmed")
             self.dashboard.update_advisory(advisory)
             incident.confirmed_advisory_sent = True
             await self.store.upsert(incident)
+            print(f"\n{'='*60}")
+            print("CONFIRMED ADVISORY FIRED:")
+            print(advisory)
+            print(f"{'='*60}\n")

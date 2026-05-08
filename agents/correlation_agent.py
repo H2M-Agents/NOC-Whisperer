@@ -98,8 +98,16 @@ class CorrelationAgent:
             confidence=confidence,
             recommended_action=str(result.get("recommended_action", "Investigate alerts")),
             alerts=cluster,
-            preliminary_advisory_sent=False,
-            confirmed_advisory_sent=False,
+            preliminary_advisory_sent=(
+                existing.preliminary_advisory_sent
+                if decision.action == "append" and existing is not None
+                else False
+            ),
+            confirmed_advisory_sent=(
+                existing.confirmed_advisory_sent
+                if decision.action == "append" and existing is not None
+                else False
+            ),
         )
 
     def _assemble_cluster(

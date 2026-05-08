@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import timezone
 from typing import List, Protocol, runtime_checkable
 
 from adapters.canonical_alert import CanonicalAlert, Incident, TriageDecision
@@ -45,7 +46,13 @@ class TriageAgent:
 
     def _is_temporally_proximate(self, alert: CanonicalAlert, incident: Incident) -> bool:
         """True when the alert falls within the configured window of incident activity."""
-        delta_seconds = abs((alert.timestamp - incident.updated_at).total_seconds())
+        alert_ts = alert.timestamp
+        incident_ts = incident.updated_at
+        if alert_ts.tzinfo is None:
+            alert_ts = alert_ts.replace(tzinfo=timezone.utc)
+        if incident_ts.tzinfo is None:
+            incident_ts = incident_ts.replace(tzinfo=timezone.utc)
+        delta_seconds = abs((alert_ts - incident_ts).total_seconds())
         return delta_seconds <= float(self.time_window_seconds)
 
     def _is_topologically_proximate(self, alert: CanonicalAlert, incident: Incident) -> bool:

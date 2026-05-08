@@ -22,6 +22,7 @@ class NOCDashboard:
         self.alert_stream: List[CanonicalAlert] = []
         self.open_incidents: List[Incident] = []
         self.latest_advisory: str = ""
+        self._stop = False
 
     def update_alert_stream(self, alert: CanonicalAlert) -> None:
         """Append alert and keep only the latest 10 events."""
@@ -88,6 +89,9 @@ class NOCDashboard:
     def run(self) -> None:
         """Render the dashboard continuously at 2 Hz refresh rate."""
         with Live(self.generate_display(), refresh_per_second=2) as live:
-            while True:
+            while not self._stop:
                 live.update(self.generate_display())
                 time.sleep(0.5)
+
+    def stop(self) -> None:
+        self._stop = True
