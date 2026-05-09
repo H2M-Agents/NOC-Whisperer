@@ -34,13 +34,13 @@ class PrometheusMCP:
             # Cart latency spike — fires when > 1s (750x normal)
             # Normal is ~0.001s, only fires when valkey-cart is down
             'rate(app_cart_add_item_latency_seconds_sum[5m])'
-            ' / rate(app_cart_add_item_latency_seconds_count[5m]) > 1.0',
+            ' / rate(app_cart_add_item_latency_seconds_count[5m]) > 0.1',
             # Cart get latency spike
             'rate(app_cart_get_cart_latency_seconds_sum[5m])'
-            ' / rate(app_cart_get_cart_latency_seconds_count[5m]) > 1.0',
+            ' / rate(app_cart_get_cart_latency_seconds_count[5m]) > 0.1',
             # Frontend 5xx errors — only fires on server errors
             # status label available in app_frontend_requests_total
-            'rate(app_frontend_requests_total{status=~"5.."}[5m]) > 0.1',
+            'rate(app_frontend_requests_total{status=~"5.."}[5m]) > 0.005',
             # Any OTel service completely down
             'up{job=~"opentelemetry-demo/.*"} == 0',
         ]
