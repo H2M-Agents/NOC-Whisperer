@@ -31,11 +31,11 @@ class PrometheusMCP:
     def get_threshold_breaches(self) -> List[CanonicalAlert]:
         """Fetch Prometheus threshold breaches as canonical alerts."""
         queries = [
-            'rate(app_cart_add_item_latency_seconds_sum[1m])'
-            ' / rate(app_cart_add_item_latency_seconds_count[1m]) > 0.5',
-            'rate(app_cart_get_cart_latency_seconds_sum[1m])'
-            ' / rate(app_cart_get_cart_latency_seconds_count[1m]) > 0.5',
-            'rate(app_frontend_requests_total[1m]) > 0',
+            'rate(app_cart_add_item_latency_seconds_sum[5m])'
+            ' / rate(app_cart_add_item_latency_seconds_count[5m]) > 0.5',
+            'rate(app_cart_get_cart_latency_seconds_sum[5m])'
+            ' / rate(app_cart_get_cart_latency_seconds_count[5m]) > 0.5',
+            'rate(app_frontend_requests_total[5m]) > 0',
             'up{job=~"opentelemetry-demo/.*"} == 0',
         ]
 
@@ -88,14 +88,15 @@ class PrometheusMCP:
 
         metric_name = str(metric.get("__name__", "unknown_metric"))
         labels = metric
+        service_name = labels.get("service_name", "")
         job = labels.get("job", "")
         instance = labels.get("instance", "")
 
-        if "/" in job:
-            # OTel demo format: "opentelemetry-demo/cart"
+        if service_name:
+            device = service_name
+        elif "/" in job:
             device = job.split("/")[-1]
         elif ":" in instance:
-            # Instance format: "cart:8080" — strip port
             device = instance.split(":")[0]
         elif instance:
             device = instance
