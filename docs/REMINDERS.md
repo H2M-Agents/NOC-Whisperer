@@ -69,6 +69,34 @@
   scripts/run_demo.py
   .env.example
 
+## REMINDER-009 — Second Demo Scenario (Checkout Failure)
+**Status:** OPEN — try after GPU rehearsal
+**Priority:** Nice-to-have — adds demo impact
+**Last updated:** Sat May 9 2026
+
+**What:**
+  Test checkout service failure as second demo scenario.
+  No retraining needed — pipeline generalizes to any failure.
+
+**Live mode test:**
+  On ada-vm-1: docker stop checkout
+  On Mac: python3 scripts/run_demo.py (NOC_LIVE_MODE=true)
+  Watch for checkout + payment + accounting cascade
+
+**Synthetic mode (if needed):**
+  Add CHECKOUT_CASCADE_SCENARIO to generator/fault_scenarios.py
+  No GPU needed — ~30 minutes of work
+
+**Presentation value:**
+  "NOC Whisperer generalizes to any failure mode.
+   We demonstrate two scenarios — cache failure
+   and service failure — with zero retraining."
+
+**When to do this:**
+  After Session 27 GPU rehearsal confirms
+  primary valkey-cart scenario works end-to-end.
+  Target: Mon May 11 if time permits.
+
 ---
 
 ## REMINDER-001 — SV Cluster Configuration
