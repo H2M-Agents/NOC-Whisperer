@@ -82,6 +82,13 @@ class StreamingPipeline:
 
     async def process_alert(self, raw_alert: Any) -> None:
         """Run Normalizer→Triage→Correlation→Store→dashboard→advisory checks."""
+        # Skip synthetic_noise alerts — only present in synthetic mode.
+        # In live mode (NOC_LIVE_MODE=true) this condition never triggers
+        # since real Prometheus/Jaeger alerts use different source_system values.
+        # In synthetic mode these noise alerts create spurious incidents
+        # that obscure the primary valkey-cart cascade story.
+        if getattr(raw_alert, "source_system", "") == "synthetic_noise":
+            return
         canonical = self._canonicalize(raw_alert)
         decision = self.triage.route(canonical)
         incident = self.correlation.correlate(decision)
