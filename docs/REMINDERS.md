@@ -6,6 +6,71 @@
 
 ---
 
+## DEMO DAY RUNBOOK
+**This is the step-by-step sequence for demo day.**
+
+### Pre-Demo Setup (T-5 minutes)
+  ssh bmammen@ada-vm-1
+  cd ~/projects/opentelemetry-demo
+  docker compose up -d
+  docker compose ps | grep -v "Up" | grep -v "NAME"
+  # All containers must show Up
+
+### Verify Data Flowing (T-2 minutes)
+  curl -s "http://10.0.50.50:9090/api/v1/label/__name__/values" \
+    | python3 -m json.tool | grep "app_" | head -5
+  # Must show app_cart_* metrics
+
+### Start Demo (T=0)
+  # On Mac
+  .venv/bin/python3 scripts/run_demo.py
+  # Dashboard appears — all panels empty — this is correct
+
+### Inject Fault (T+30s)
+  # On ada-vm-1 in second terminal
+  docker stop valkey-cart
+
+### What To Expect
+  T+60s:  Prometheus detects valkey-cart failure
+  T+75s:  MCP tool polls — picks up alerts
+  T+90s:  Alerts appear in RAW ALERT STREAM panel
+  T+120s: Incident created in INCIDENT BOARD panel
+  T+150s: Advisory fires in NOC ADVISORY panel
+
+### Stop Demo
+  Ctrl+C on Mac terminal
+  Summary prints automatically
+
+### Restore After Demo
+  docker start valkey-cart
+  # Wait 60 seconds for services to reconnect
+
+---
+
+## REMINDER-007 — Fix Noise Alerts In Synthetic Mode
+**Status:** OPEN
+**Blocking:** Synthetic demo cleanliness
+**Action required:**
+  Fix orchestrator/streaming_pipeline.py
+  Add early return in process_alert() for synthetic_noise:
+    if getattr(alert, "source_system", "") == "synthetic_noise":
+        return
+  Confidence: 97.5%
+  Apply before demo day.
+
+## REMINDER-008 — Commit Pending Changes
+**Status:** OPEN
+**Blocking:** Nothing — but must commit before demo
+**Files to commit:**
+  mcp_tools/prometheus_mcp.py
+  mcp_tools/jaeger_mcp.py
+  config/mcp_endpoints.yaml
+  docs/REMINDERS.md
+  scripts/run_demo.py
+  .env.example
+
+---
+
 ## REMINDER-001 — SV Cluster Configuration
 **Status:** RESOLVED — Wed May 6 2026
 
