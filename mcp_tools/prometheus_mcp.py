@@ -31,11 +31,17 @@ class PrometheusMCP:
     def get_threshold_breaches(self) -> List[CanonicalAlert]:
         """Fetch Prometheus threshold breaches as canonical alerts."""
         queries = [
+            # Cart latency spike — fires when > 1s (750x normal)
+            # Normal is ~0.001s, only fires when valkey-cart is down
             'rate(app_cart_add_item_latency_seconds_sum[5m])'
-            ' / rate(app_cart_add_item_latency_seconds_count[5m]) > 0.5',
+            ' / rate(app_cart_add_item_latency_seconds_count[5m]) > 1.0',
+            # Cart get latency spike
             'rate(app_cart_get_cart_latency_seconds_sum[5m])'
-            ' / rate(app_cart_get_cart_latency_seconds_count[5m]) > 0.5',
-            'rate(app_frontend_requests_total[5m]) > 0',
+            ' / rate(app_cart_get_cart_latency_seconds_count[5m]) > 1.0',
+            # Frontend 5xx errors — only fires on server errors
+            # status label available in app_frontend_requests_total
+            'rate(app_frontend_requests_total{status=~"5.."}[5m]) > 0.1',
+            # Any OTel service completely down
             'up{job=~"opentelemetry-demo/.*"} == 0',
         ]
 
@@ -86,8 +92,14 @@ class PrometheusMCP:
         metric = metric_result.get("metric", {})
         raw_value = metric_result.get("value", [None, 0])
 
-        metric_name = str(metric.get("__name__", "unknown_metric"))
         labels = metric
+        metric_name = labels.get("__name__", "")
+        if not metric_name:
+            # rate() queries drop __name__ — use signal description
+            service = labels.get("service_name", "")
+            metric_name = f"{service}_threshold_breach" if service else "threshold_breach"
+        else:
+            metric_name = str(metric_name)
         service_name = labels.get("service_name", "")
         job = labels.get("job", "")
         instance = labels.get("instance", "")
