@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import sys
 from pathlib import Path
 from time import perf_counter
@@ -55,6 +56,7 @@ async def run_demo() -> None:
     loop = asyncio.get_event_loop()
 
     load_dotenv()
+    LIVE_MODE = os.environ.get("NOC_LIVE_MODE", "false").lower() == "true"
 
     generator = ScenarioDrivenGenerator()
     incident = generator.generate_storm(VALKEY_CART_CASCADE_SCENARIO)
@@ -77,10 +79,33 @@ async def run_demo() -> None:
     dashboard = NOCDashboard()
     reconciler = ReconcilerAgent(topology_mcp=topology, prometheus_mcp=_DemoPrometheus())
 
-    synthetic_tool = SyntheticAlertTool(alerts)
+    if LIVE_MODE:
+        from mcp_tools.prometheus_mcp import PrometheusMCP
+        from mcp_tools.jaeger_mcp import JaegerMCP
+        from mcp_tools.node_exporter_mcp import NodeExporterMCP
+        import yaml
+
+        with open("config/mcp_endpoints.yaml") as f:
+            mcp_config = yaml.safe_load(f)
+        mcp_tools_list = [
+            PrometheusMCP(mcp_config["prometheus"]["base_url"]),
+            JaegerMCP(mcp_config["jaeger"]["base_url"]),
+            NodeExporterMCP(
+                mcp_config["node_exporter"]["prometheus_base_url"]
+            ),
+        ]
+        print("LIVE MODE: Using real MCP tools")
+        print(f"  Prometheus: {mcp_config['prometheus']['base_url']}")
+        print(f"  Jaeger:     {mcp_config['jaeger']['base_url']}")
+        print("  Stop valkey-cart to trigger demo scenario:")
+        print("  docker stop valkey-cart  (on ada-vm-1)")
+    else:
+        synthetic_tool = SyntheticAlertTool(alerts)
+        mcp_tools_list = [synthetic_tool]
+        print("SYNTHETIC MODE: Using generated alerts")
 
     pipeline = StreamingPipeline(
-        mcp_tools=[synthetic_tool],
+        mcp_tools=mcp_tools_list,
         normalizer=normalizer,
         triage=triage,
         correlation=correlator,
