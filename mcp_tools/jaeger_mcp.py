@@ -22,7 +22,7 @@ class JaegerMCP:
         """Fetch error spans from Jaeger and convert to canonical alerts."""
         try:
             response = requests.get(
-                f"{self.base_url}/api/traces",
+                f"{self.base_url}/jaeger/ui/api/traces",
                 params={
                     "service": "all",
                     "tags": '{"error":"true"}',
@@ -52,7 +52,7 @@ class JaegerMCP:
     def health_check(self) -> bool:
         """Return True when Jaeger services endpoint is reachable."""
         try:
-            response = requests.get(f"{self.base_url}/api/services", timeout=5)
+            response = requests.get(f"{self.base_url}/jaeger/ui/api/services", timeout=5)
             response.raise_for_status()
             payload = response.json()
             return isinstance(payload, dict) and "data" in payload

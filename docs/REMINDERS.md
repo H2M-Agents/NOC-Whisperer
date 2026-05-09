@@ -17,30 +17,16 @@ See config/llm_endpoints.yaml for placeholder structure.
 ---
 
 ## REMINDER-002 — VM Docker Compose Setup
-**Status:** OPEN — ESCALATED
-**Last updated:** Wed May 6 2026
-**Blocking:** Session 25 (live OTel integration)
-**Deadline:** Must resolve by Fri May 8
-**Situation:**
-  VM confirmed: ada-vm-1 with Docker 29.4.2, 94GB RAM, 24 CPUs.
-  Blocker: bmammen user not in docker group.
-  `sudo usermod -aG docker bmammen` requires admin/sudo access.
+**Status:** RESOLVED — Sat May 9 2026
 
-**Action required:**
-  1. Ask VM admin to run:
-       sudo usermod -aG docker bmammen
-  2. Then verify with:
-       docker ps
+OTel stack running on ada-vm-1 (10.0.50.50)  
+All 24 containers running  
 
-**Fallback if unresolved by May 10:**
-  Run demo with synthetic alerts via fault_scenarios.py.
-  All agents run normally — only alert source is synthetic.
-  Demo still fully functional.
-
-**What to do when resolved:**
-  1. Complete Session 7 checklist
-  2. Update config/mcp_endpoints.yaml
-  3. Mark this reminder as RESOLVED
+Prometheus: http://10.0.50.50:9090 ✅  
+Jaeger:     http://10.0.50.50:16686/jaeger/ui ✅  
+            API prefix: /jaeger/ui/api/  
+Frontend:   http://10.0.50.50:8080 ✅  
+18 services reporting telemetry
 
 ---
 
