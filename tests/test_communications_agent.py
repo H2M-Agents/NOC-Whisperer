@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from unittest.mock import patch
 
 from adapters.canonical_alert import Incident
 from communications.communications_agent import CommunicationsAgent
@@ -40,7 +41,9 @@ def test_generate_returns_string() -> None:
     """Preliminary generate returns non-empty string."""
     agent = CommunicationsAgent(model_path=None)
     incident = _sample_incident()
-    result = agent.generate(incident, advisory_type="preliminary")
+    with patch.object(CommunicationsAgent, '_infer_ollama',
+                      return_value="Mock preliminary advisory"):
+        result = agent.generate(incident, advisory_type="preliminary")
     assert isinstance(result, str)
     assert len(result) > 0
 
@@ -49,7 +52,9 @@ def test_generate_confirmed_returns_string() -> None:
     """Confirmed generate returns non-empty string."""
     agent = CommunicationsAgent(model_path=None)
     incident = _sample_incident()
-    result = agent.generate(incident, advisory_type="confirmed")
+    with patch.object(CommunicationsAgent, '_infer_ollama',
+                      return_value="Mock confirmed advisory"):
+        result = agent.generate(incident, advisory_type="confirmed")
     assert isinstance(result, str)
     assert len(result) > 0
 

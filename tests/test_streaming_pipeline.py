@@ -6,6 +6,7 @@ import asyncio
 import uuid
 from datetime import datetime, timezone
 from typing import Any, List
+from unittest.mock import patch
 
 import pytest
 
@@ -100,32 +101,36 @@ async def test_process_alert_invalid_payload_raises(memory_store: IncidentStore,
 @pytest.mark.asyncio
 async def test_check_advisory_preliminary_triggers(memory_store: IncidentStore, topology: MockTopologyMCP) -> None:
     """Confidence above 0.50 triggers preliminary advisory once."""
-    dash = RecordingDashboard()
-    pipe = StreamingPipeline(
-        mcp_tools=[],
-        normalizer=NormalizerAgent(model_path=None),
-        triage=TriageAgent(topology, memory_store),
-        correlation=CorrelationAgent(topology, memory_store, mode="development"),
-        communications=CommunicationsAgent(model_path=None),
-        incident_store=memory_store,
-        dashboard=dash,
-    )
-    inc = Incident(
-        incident_id=str(uuid.uuid4()),
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
-        status="open",
-        root_cause_device="valkey-cart",
-        incident_title="Test",
-        affected_services=["valkey-cart", "cart"],
-        confidence=0.55,
-        recommended_action="Investigate",
-        alerts=[_valkey_alert("a1"), _valkey_alert("a2")],
-        preliminary_advisory_sent=False,
-        confirmed_advisory_sent=False,
-    )
-    await pipe.check_advisory_triggers(inc)
-    assert len(dash.advisories) == 1
+    with patch(
+        "communications.communications_agent.CommunicationsAgent._infer_ollama",
+        return_value="Mock NOC advisory text",
+    ):
+        dash = RecordingDashboard()
+        pipe = StreamingPipeline(
+            mcp_tools=[],
+            normalizer=NormalizerAgent(model_path=None),
+            triage=TriageAgent(topology, memory_store),
+            correlation=CorrelationAgent(topology, memory_store, mode="development"),
+            communications=CommunicationsAgent(model_path=None),
+            incident_store=memory_store,
+            dashboard=dash,
+        )
+        inc = Incident(
+            incident_id=str(uuid.uuid4()),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
+            status="open",
+            root_cause_device="valkey-cart",
+            incident_title="Test",
+            affected_services=["valkey-cart", "cart"],
+            confidence=0.55,
+            recommended_action="Investigate",
+            alerts=[_valkey_alert("a1"), _valkey_alert("a2")],
+            preliminary_advisory_sent=False,
+            confirmed_advisory_sent=False,
+        )
+        await pipe.check_advisory_triggers(inc)
+        assert len(dash.advisories) == 1
 
 
 @pytest.mark.asyncio
@@ -133,32 +138,36 @@ async def test_check_advisory_confirmed_after_preliminary_sent(
     memory_store: IncidentStore, topology: MockTopologyMCP
 ) -> None:
     """High confidence triggers confirmed advisory when preliminary already sent."""
-    dash = RecordingDashboard()
-    pipe = StreamingPipeline(
-        mcp_tools=[],
-        normalizer=NormalizerAgent(model_path=None),
-        triage=TriageAgent(topology, memory_store),
-        correlation=CorrelationAgent(topology, memory_store, mode="development"),
-        communications=CommunicationsAgent(model_path=None),
-        incident_store=memory_store,
-        dashboard=dash,
-    )
-    inc = Incident(
-        incident_id=str(uuid.uuid4()),
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
-        status="open",
-        root_cause_device="valkey-cart",
-        incident_title="Test",
-        affected_services=["valkey-cart", "cart"],
-        confidence=0.90,
-        recommended_action="Investigate",
-        alerts=[_valkey_alert("a1"), _valkey_alert("a2")],
-        preliminary_advisory_sent=True,
-        confirmed_advisory_sent=False,
-    )
-    await pipe.check_advisory_triggers(inc)
-    assert len(dash.advisories) == 1
+    with patch(
+        "communications.communications_agent.CommunicationsAgent._infer_ollama",
+        return_value="Mock NOC advisory text",
+    ):
+        dash = RecordingDashboard()
+        pipe = StreamingPipeline(
+            mcp_tools=[],
+            normalizer=NormalizerAgent(model_path=None),
+            triage=TriageAgent(topology, memory_store),
+            correlation=CorrelationAgent(topology, memory_store, mode="development"),
+            communications=CommunicationsAgent(model_path=None),
+            incident_store=memory_store,
+            dashboard=dash,
+        )
+        inc = Incident(
+            incident_id=str(uuid.uuid4()),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
+            status="open",
+            root_cause_device="valkey-cart",
+            incident_title="Test",
+            affected_services=["valkey-cart", "cart"],
+            confidence=0.90,
+            recommended_action="Investigate",
+            alerts=[_valkey_alert("a1"), _valkey_alert("a2")],
+            preliminary_advisory_sent=True,
+            confirmed_advisory_sent=False,
+        )
+        await pipe.check_advisory_triggers(inc)
+        assert len(dash.advisories) == 1
 
 
 @pytest.mark.asyncio
