@@ -29,7 +29,7 @@ class StreamingPipeline:
         self.communications = communications
         self.store = incident_store
         self.dashboard = dashboard
-        self.seen_alert_ids: set[str] = set()
+        self.seen_alert_ids: dict[str, float] = {}  # id -> timestamp
 
     async def streaming_loop(self) -> None:
         """Continuously poll MCP tools every 15 seconds and process new alerts."""
@@ -38,12 +38,19 @@ class StreamingPipeline:
             for tool in self.mcp_tools:
                 raw_alerts.extend(self._alerts_from_tool(tool))
 
+            import time
+
+            now = time.time()
+            # Expire entries older than 60 seconds
+            self.seen_alert_ids = {
+                k: v for k, v in self.seen_alert_ids.items() if now - v < 60.0
+            }
             new_alerts = [a for a in raw_alerts if self._alert_id(a) not in self.seen_alert_ids]
             if new_alerts:
                 print(f"\n[Streaming] {len(new_alerts)} new alerts received")
 
             for alert in new_alerts:
-                self.seen_alert_ids.add(self._alert_id(alert))
+                self.seen_alert_ids[self._alert_id(alert)] = time.time()
                 await self.process_alert(alert)
 
             await asyncio.sleep(15)
