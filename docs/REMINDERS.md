@@ -97,6 +97,54 @@
   primary valkey-cart scenario works end-to-end.
   Target: Mon May 11 if time permits.
 
+## REMINDER-010 — Fix CommunicationsAgent RLVR Training Data
+**Status:** OPEN
+**Priority:** High — affects advisory quality on demo day
+**Last updated:** Mon May 11 2026
+
+**Problem:**
+  Fine-tuned communications model repeats the same phrase
+  for every field in the advisory. Example:
+    Impact: INVESTIGATING suspected cart root cause
+    Resolution: INVESTIGATING suspected cart root cause
+    Status: INVESTIGATING suspected cart root cause
+
+  Root cause: RLVR reward function rewards keyword presence
+  but does not penalize repetition. Model learned to
+  repeat "INVESTIGATING suspected [device] root cause"
+  everywhere to maximize reward.
+
+**Fix needed:**
+
+  Step 1: Review data/communications_sft_train.json
+          Verify SFT examples have diverse field content
+          Each field should have different meaningful content
+
+  Step 2: Fix reward function in
+          scripts/train_communications_rlvr.py
+          Add repetition penalty:
+            lines = completion.strip().split("\n")
+            unique_lines = set(lines)
+            repetition_ratio = len(unique_lines) / max(len(lines), 1)
+            score += 0.4 * repetition_ratio
+          Remove or reduce pure keyword matching rewards
+
+  Step 3: Retrain on GPU (RLVR only — SFT checkpoint ok)
+          ~50 minutes on RTX 4060 Ti or RTX 4090
+          Save to models/communications_final_locked/
+
+  Step 4: Test advisory quality with:
+          python3 -c "
+          from communications.communications_agent import CommunicationsAgent
+          agent = CommunicationsAgent()
+          # test generate() output quality
+          "
+
+**Estimated time:** 2 hours (including GPU training)
+**Target:** Before demo day Sun May 17
+**Fallback:** Use Ollama qwen3:8b for advisory generation
+             (already working, good quality output)
+
 ---
 
 ## REMINDER-001 — SV Cluster Configuration

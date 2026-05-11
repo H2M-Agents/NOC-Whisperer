@@ -73,7 +73,7 @@ async def run_demo() -> None:
     correlator = CorrelationAgent(
         topology_mcp=topology,
         incident_store=store,
-        mode="development",
+        mode="production",
     )
     communications = CommunicationsAgent(model_path=None)
     dashboard = NOCDashboard()
