@@ -70,7 +70,7 @@ class CommunicationsAgent:
             with torch.no_grad():
                 outputs = self._model.generate(
                     **inputs,
-                    max_new_tokens=256,
+                    max_new_tokens=512,
                     temperature=0.3,
                     do_sample=True,
                     pad_token_id=self._tokenizer.eos_token_id,
