@@ -94,7 +94,8 @@ class CommunicationsAgent:
                     "model": self._ollama_model,
                     "prompt": prompt,
                     "stream": False,
-                    "options": {"temperature": 0.3, "num_predict": 256},
+                    "think": False,
+                    "options": {"temperature": 0.3, "num_predict": 512},
                 },
                 timeout=60,
             )
