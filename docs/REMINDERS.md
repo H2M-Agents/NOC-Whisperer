@@ -1,5 +1,12 @@
 # NOC Whisperer — Open Reminders and Pending Confirmations
 
+## ARCHITECTURE ACCURACY NOTE
+  3 LLM-powered agents: Normalizer, Correlation, Communications
+  2 rule-based agents:  Triage, Reconciler
+  All demo materials, slides, and descriptions must
+  reflect this distinction accurately.
+  Do NOT describe TriageAgent or ReconcilerAgent as LLM-based.
+
 > Cursor: At the start of every session, check this file.
 > If any reminder is marked BLOCKING for the current session,
 > alert the user before proceeding with any code changes.

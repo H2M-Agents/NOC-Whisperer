@@ -8,7 +8,7 @@
 
 ## 30-second elevator pitch
 
-NOC Whisperer turns a flood of incompatible observability alerts into **one correlated incident** and **operator-ready advisories** in **under two seconds**, using a **five-agent pipeline** with **fine-tuned Qwen models** and **DSPy-optimized correlation**. We ship a **live OpenTelemetry demo** (Valkey cascade) and measured **~97% DSPy root-cause accuracy** on a held-out val set—while learning hard lessons about **RL reward hacking** in advisory training and fixing the reward function.
+NOC Whisperer turns a flood of incompatible observability alerts into **one correlated incident** and **operator-ready advisories** in **under two seconds**, using a **hybrid five-agent pipeline**: **three** LLM-backed agents (fine-tuned **Qwen** normalizer + advisories, **DSPy** correlation on **gpt-oss-20b**) plus **two** fast **rule-based** agents (triage + reconciler). We ship a **live OpenTelemetry demo** (Valkey cascade) and measured **~97% DSPy root-cause accuracy** on a held-out val set—while learning hard lessons about **RL reward hacking** in advisory training and fixing the reward function.
 
 ---
 
@@ -44,18 +44,19 @@ NOC Whisperer turns a flood of incompatible observability alerts into **one corr
 
 ## Slide 3 — Solution (5-agent pipeline overview)
 
-**Hook:** One pipeline replaces tribal knowledge with repeatable machine reasoning.
+**Hook:** One pipeline replaces tribal knowledge with repeatable machine reasoning—**not** “five LLMs in a trench coat.”
 
 **Bullets:**
-1. **Normalizer** — RLVR Qwen+LoRA: domain + severity  
-2. **Triage** — rules: new vs append  
-3. **Correlation** — DSPy: incident fields + confidence  
-4. **Reconciler** — ReAct: merge/split/close  
-5. **Communications** — RLVR Qwen+LoRA: preliminary / confirmed advisories  
+1. **Normalizer** — **LLM** (Qwen + LoRA): domain + severity  
+2. **Triage** — **rules** (topology + store): new vs append — **no LLM**  
+3. **Correlation** — **LLM** (DSPy program): incident fields + confidence  
+4. **Reconciler** — **rules** (ReAct-shaped loop): merge / split / close — **no LLM**  
+5. **Communications** — **LLM** (Qwen + LoRA, Ollama fallback): preliminary / confirmed advisories  
+- **Hybrid:** 3 LLM-powered agents + 2 rule-based agents
 
-**Technical depth:** Advisory triggers: **confidence &gt; 0.50** preliminary, **&gt; 0.85** confirmed (`CONTEXT.md`).
+**Technical depth:** Advisory triggers: **confidence &gt; 0.50** preliminary, **&gt; 0.85** confirmed (`CONTEXT.md`). **Three** agents call foundation models; **two** are deterministic.
 
-**Speaker note:** Emphasize **typed contracts** (CanonicalAlert → Incident) and **two loops** (streaming + batch)—shows engineering maturity, not a single LLM call.
+**Speaker note:** Emphasize **typed contracts** (CanonicalAlert → Incident) and **two loops** (streaming + batch). Tease slide 5 for the explicit LLM vs rule split and latency story.
 
 ---
 
@@ -65,9 +66,10 @@ NOC Whisperer turns a flood of incompatible observability alerts into **one corr
 
 **Bullets:**
 - **Pillar 1 — Ingest:** 4 MCP tools, each canonicalizes to `List[CanonicalAlert]`
-- **Pillar 2 — Reason:** five-agent sequential pipeline + DSPy program artifact
+- **Pillar 2 — Reason:** hybrid **five-agent** pipeline (**3 LLM**, **2 rule**) + DSPy compiled program artifact
 - **Pillar 3 — Orchestrate:** asyncio streaming (15s poll) + batch reconciler; **SQLite** source of truth
 - **Pillar 4 — Operate:** Rich terminal dashboard (raw stream, incident board, advisory)
+- **Hybrid:** 3 LLM-powered agents + 2 rule-based agents
 
 **Technical depth:** DSPy compiled program path: `dspy_programs/alerts_to_incident_compiled.json` (`evaluation_results.md`).
 
@@ -75,24 +77,47 @@ NOC Whisperer turns a flood of incompatible observability alerts into **one corr
 
 ---
 
-## Slide 5 — Training pipeline (SFT + RLVR + DSPy)
+## Slide 5 — The 5 Agents (hybrid: LLM + rules)
 
-**Hook:** Three complementary training philosophies—supervision, reinforcement, and program optimization.
+**Hook:** Reserve foundation models for **language and judgment**; use **deterministic code** where rules already beat LLMs on speed and auditability.
 
 **Bullets:**
-- **SFT → RLVR** on **Qwen2.5-7B-Instruct** + **4-bit NF4** LoRA for Normalizer + Communications
-- **DSPy** for correlation: compile/save optimized `AlertsToIncident`
-- **Separation:** GPU trains; Mac runs **fast mocked tests** (211 tests, CI-friendly)
 
-**Technical depth:** Normalizer SFT: loss **3.896 → 0.541**, token accuracy **80.9%**, **7 min** on **RTX 4060 Ti** (`evaluation_results.md`). Communications SFT: loss **3.001 → 0.250**, token accuracy **94.2%**, **57 s** on **RTX 4090**.
+  **LLM-POWERED AGENTS (3):**
 
-**Speaker note:** Mention RLVR pass for Normalizer: final train loss **0.034**, **77 min**, reward **0.200 → 0.350**—shows the stack actually trains, not just imports.
+  - **NormalizerAgent:**  
+    fine-tuned Qwen2.5-7B-Instruct (SFT + RLVR)  
+    loss 3.1 → 0.541, 80.9% domain accuracy  
+
+  - **CorrelationAgent:**  
+    DSPy BootstrapFewShot + gpt-oss-20b  
+    96.7% root cause accuracy, confidence 0.55→0.95  
+
+  - **CommunicationsAgent:**  
+    fine-tuned Qwen2.5-7B-Instruct (SFT + RLVR)  
+    94.2% token accuracy, Ollama fallback  
+
+  **RULE-BASED AGENTS (2):**
+
+  - **TriageAgent:**  
+    topology graph routing + temporal clustering  
+    deterministic, no LLM, `<1ms` per alert  
+    routes alerts to correct incident by proximity  
+
+  - **ReconcilerAgent:**  
+    merge/split/close rules, ReAct loop structure  
+    deterministic, no LLM  
+    closes stale incidents after 1200s inactivity  
+
+**Technical depth:** Metric sources: `docs/evaluation_results.md` (training table); correlation **96.7%** on val **30** examples; demo incident confidence **0.91** on primary Valkey scenario (`CONTEXT.md`).
+
+**Speaker note:** “We deliberately chose rule-based logic for triage and reconciliation — deterministic tasks where rules outperform LLMs in speed, cost, and reliability. LLMs are reserved for tasks requiring reasoning and language generation. This hybrid architecture is more production-ready than a pure LLM pipeline — and more honest about where AI adds genuine value.” Mention GPU trains, Mac runs **211** fast mocked tests.
 
 ---
 
 ## Slide 6 — Reward hacking discovery + fix
 
-**Hook:** RL maximized the wrong signal—our advisory model “gamed” the rubric until we redesigned rewards.
+**Hook:** RL maximized the wrong signal—our **Communications** LLM “gamed” the rubric until we redesigned rewards (rule-based agents unaffected).
 
 **Bullets:**
 - **Symptom:** repeated “ACTION” / boilerplate lines to harvest keyword + readability scores
@@ -186,7 +211,7 @@ NOC Whisperer turns a flood of incompatible observability alerts into **one corr
 
 **Bullets:**
 - **Bring:** link to repo, `evaluation_results.md`, demo runbook, one live terminal
-- **Anticipate:** “Why not one giant LLM?” → contracts, testability, cost, specialization
+- **Anticipate:** “Why not one giant LLM?” → **hybrid** design: rules for routing/reconcile; LLMs for classify/correlate/write; contracts, testability, cost, specialization
 - **Anticipate:** “What breaks in prod?” → MCP availability, dedupe window, correlator mode
 
 **Technical depth:** CI signal: **211** tests, fast suite (project standard)—mention as engineering hygiene.
