@@ -102,7 +102,29 @@ def advisory_reward(generated: str) -> float:
     scores.append(float("NOC" in generated.upper()))
     fk = flesch_kincaid_grade(generated)
     scores.append(1.0 if 7 <= fk <= 10 else 0.5)
-    return sum(scores) / len(scores)
+    # Penalty 1: repetition penalty
+    # Penalize duplicate non-empty lines
+    lines = [l.strip() for l in generated.split("\n") if l.strip()]
+    if lines:
+        unique_ratio = len(set(lines)) / len(lines)
+    else:
+        unique_ratio = 0.0
+    repetition_penalty = 1.0 - unique_ratio  # 0=no repeat, 1=all repeat
+
+    # Penalty 2: length penalty
+    # Good advisory: 5-15 lines. Penalize > 20 lines
+    line_count = len(lines)
+    if line_count <= 15:
+        length_penalty = 0.0
+    elif line_count <= 25:
+        length_penalty = 0.3
+    else:
+        length_penalty = 0.6
+
+    # Final score with penalties
+    base_score = sum(scores) / len(scores)
+    final_score = max(0.0, base_score - repetition_penalty * 0.4 - length_penalty)
+    return final_score
 
 
 def build_lora_config() -> Any:
