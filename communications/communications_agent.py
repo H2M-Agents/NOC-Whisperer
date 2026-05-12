@@ -80,6 +80,17 @@ class CommunicationsAgent:
                 skip_special_tokens=True,
             )
             out = decoded.strip()
+            # Truncate at first END marker — model may repeat
+            end_markers = [
+                "[END] [NO CUSTOMER ACTION REQUIRED]",
+                "[END]",
+                "---\n**END OF MESSAGE**",
+                "**END OF MESSAGE**",
+            ]
+            for marker in end_markers:
+                if marker in out:
+                    out = out[: out.index(marker) + len(marker)].strip()
+                    break
             return out if out else "[inference: empty decode]"
         except Exception as e:
             return f"[inference error: {e}]"
