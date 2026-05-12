@@ -13,6 +13,9 @@
   ssh bmammen@ada-vm-1
   cd ~/projects/opentelemetry-demo
   docker compose up -d
+  # llm container has restart:no in override file
+  # it will start once and stay stable
+  # no action needed for llm
   docker compose ps | grep -v "Up" | grep -v "NAME"
   # All containers must show Up
 
