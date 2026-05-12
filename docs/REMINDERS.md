@@ -177,6 +177,70 @@
 **Target:** Wed May 13 2026
 **Fallback:** Ollama qwen3:8b (clean output, already working)
 
+## REMINDER-011 — Fix Block-Level Repetition in Communications RLVR
+**Status:** OPEN
+**Priority:** Low — inference fix in place for demo day
+**Last updated:** Tue May 12 2026
+
+**Problem:**
+  After fixing line-level reward hacking (REMINDER-010),
+  the retrained model still generates block-level repetition.
+  The first advisory block is good quality but repeats 4-6x.
+
+  Example output structure:
+    [NOC ADVISORY] Cart service threshold breach    ← template
+    [NOC ADVISORY] Cart service threshold breach    ← good block
+    ACTION REQUIRED: Monitor cart service status
+    Impact: Cart service breached threshold...
+    Remediation: Cart service restored...
+    [NOC ADVISORY] Cart service threshold breach    ← repeat
+    ACTION REQUIRED: Monitor cart service status    ← repeat
+    ...
+
+  Root cause: model learned to repeat a 4-line block
+  rather than individual lines. Line-level repetition
+  penalty did not catch block-level repetition.
+  reward(repeated_block_6x) = 0.0 but model still
+  generates it — likely learned this pattern from
+  SFT data or early RLVR steps before penalty kicks in.
+
+**Proposed fix:**
+  Add block-level repetition detection to advisory_reward():
+
+    def detect_block_repetition(text: str) -> float:
+        lines = [l.strip() for l in text.split('\n') if l.strip()]
+        block_size = min(5, len(lines) // 2)
+        if block_size < 2:
+            return 0.0
+        first_block = tuple(lines[:block_size])
+        rest = lines[block_size:]
+        for i in range(len(rest) - block_size + 1):
+            if tuple(rest[i:i+block_size]) == first_block:
+                return 1.0
+        return 0.0
+
+  Then in advisory_reward():
+    block_penalty = detect_block_repetition(generated) * 0.8
+    final_score = max(0.0, base_score
+                         - repetition_penalty * 0.4
+                         - length_penalty
+                         - block_penalty)
+
+  Then retrain RLVR with new reward function.
+
+**Current workaround:**
+  Inference-time truncation at first repeated line
+  in communications/communications_agent.py _infer_local()
+  This is deterministic and works for demo day.
+
+**Presentation note:**
+  This is a whack-a-mole RLHF problem — model finds new
+  hacks as old ones are penalized. Classic production RLHF
+  challenge. Good story for lessons learned slide.
+
+**Estimated time:** 1.5 hours including GPU retraining
+**Target:** Post demo day
+
 ---
 
 ## REMINDER-001 — SV Cluster Configuration
