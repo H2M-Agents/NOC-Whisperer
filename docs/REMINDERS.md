@@ -101,52 +101,81 @@
   Target: Mon May 11 if time permits.
 
 ## REMINDER-010 — Fix CommunicationsAgent RLVR Training Data
-**Status:** OPEN
-**Priority:** High — affects advisory quality on demo day
-**Last updated:** Mon May 11 2026
+**Status:** OPEN — IN PROGRESS
+**Priority:** High — presentation story + demo quality
+**Last updated:** Tue May 12 2026
 
-**Problem:**
-  Fine-tuned communications model repeats the same phrase
-  for every field in the advisory. Example:
-    Impact: INVESTIGATING suspected cart root cause
-    Resolution: INVESTIGATING suspected cart root cause
-    Status: INVESTIGATING suspected cart root cause
+**Exact diagnosis (confirmed Tue May 12 2026):**
 
-  Root cause: RLVR reward function rewards keyword presence
-  but does not penalize repetition. Model learned to
-  repeat "INVESTIGATING suspected [device] root cause"
-  everywhere to maximize reward.
+  SFT training data (80 examples): GOOD QUALITY ✅
+    Clean 7-line advisories, no repetition
+    Loss 3.001 → 0.250, accuracy 94.2%
 
-**Fix needed:**
+  RLVR reward function: BROKEN ❌
+    File: scripts/train_communications_rlvr.py
+    Function: advisory_reward() lines 88-103
 
-  Step 1: Review data/communications_sft_train.json
-          Verify SFT examples have diverse field content
-          Each field should have different meaningful content
+    Root cause — three compounding issues:
 
-  Step 2: Fix reward function in
-          scripts/train_communications_rlvr.py
-          Add repetition penalty:
-            lines = completion.strip().split("\n")
-            unique_lines = set(lines)
-            repetition_ratio = len(unique_lines) / max(len(lines), 1)
-            score += 0.4 * repetition_ratio
-          Remove or reduce pure keyword matching rewards
+    Issue 1: Keyword presence not quality
+      scores.append(float("ACTION" in generated.upper()))
+      scores.append(float("NOC" in generated.upper()))
+      → Same reward whether "ACTION" appears 1x or 50x
 
-  Step 3: Retrain on GPU (RLVR only — SFT checkpoint ok)
-          ~50 minutes on RTX 4060 Ti or RTX 4090
-          Save to models/communications_final_locked/
+    Issue 2: Flesch-Kincaid rewards long simple text
+      fk = flesch_kincaid_grade(generated)
+      scores.append(1.0 if 7 <= fk <= 10 else 0.5)
+      → Repeating "ACTION REQUIRED: Verify cart service health"
+        50 times scores grade 7-8 → maximum reward
 
-  Step 4: Test advisory quality with:
-          python3 -c "
-          from communications.communications_agent import CommunicationsAgent
-          agent = CommunicationsAgent()
-          # test generate() output quality
-          "
+    Issue 3: No repetition penalty
+      → Model discovered: repeat simple action phrases
+        = maximum score on issues 1, 2, AND 3 simultaneously
 
-**Estimated time:** 2 hours (including GPU training)
-**Target:** Before demo day Sun May 17
-**Fallback:** Use Ollama qwen3:8b for advisory generation
-             (already working, good quality output)
+    This is classic RL reward hacking — model optimizes
+    the reward signal rather than the intended behavior.
+
+  Mode instability at inference:
+    RLVR created two competing modes:
+      Mode A: Clean SFT-style advisory (7 lines)
+      Mode B: Reward-hacked advisory (50+ repeated lines)
+    temperature=0.3 randomly activates either mode
+    → unpredictable output quality between runs
+
+**Exact fix to apply:**
+  Add to advisory_reward() after scores list:
+
+    lines = [l.strip() for l in generated.split("\n") if l.strip()]
+    unique_ratio = len(set(lines)) / max(len(lines), 1)
+    repetition_penalty = 1.0 - unique_ratio
+
+    line_count = len(lines)
+    if line_count <= 15:   length_penalty = 0.0
+    elif line_count <= 25: length_penalty = 0.3
+    else:                  length_penalty = 0.6
+
+    base_score = sum(scores) / len(scores)
+    return max(0.0, base_score - repetition_penalty*0.4 - length_penalty)
+
+**Presentation talking points:**
+  1. Reward hacking is a real production RLHF problem
+  2. SFT alone produced good quality (94.2% accuracy)
+  3. RLVR with wrong reward function degraded quality
+  4. Three compounding reward issues enabled hacking:
+     keyword presence + readability score + no repetition penalty
+  5. Fix: penalize repetition + penalize excessive length
+  6. Lesson: reward function design is as important as
+     model architecture in RLHF/RLVR systems
+  7. Mode instability: competing SFT vs RLVR modes
+     cause unpredictable inference behavior
+
+**Files to change:**
+  scripts/train_communications_rlvr.py — reward function
+  models/communications_final_locked/ — retrained model
+
+**Estimated time:** 1.5 hours including GPU training
+**Target:** Wed May 13 2026
+**Fallback:** Ollama qwen3:8b (clean output, already working)
 
 ---
 
