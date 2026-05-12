@@ -165,7 +165,8 @@ def build_grpo_config() -> Any:
             num_generations=8,
             per_device_train_batch_size=1,
             gradient_accumulation_steps=8,
-            learning_rate=5e-6,
+            learning_rate=1e-6,
+            beta=0.1,  # KL penalty vs SFT reference; TRL names this `beta` (not `kl_coeff`)
             logging_steps=1,
             save_steps=50,
             report_to="none",
@@ -177,7 +178,8 @@ def build_grpo_config() -> Any:
             "num_generations": 8,
             "per_device_train_batch_size": 1,
             "gradient_accumulation_steps": 8,
-            "learning_rate": 5e-6,
+            "learning_rate": 1e-6,
+            "beta": 0.1,
             "logging_steps": 1,
             "save_steps": 50,
         }
