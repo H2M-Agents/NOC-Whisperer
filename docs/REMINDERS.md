@@ -7,6 +7,64 @@
   reflect this distinction accurately.
   Do NOT describe TriageAgent or ReconcilerAgent as LLM-based.
 
+## REMINDER-013 — CommunicationsAgent Training Drop-Dead Date
+**Status:** OPEN — ACTIVE
+**Priority:** CRITICAL
+**Last updated:** Tue May 12 2026
+
+**Drop-dead date: Thu May 15 2026 11:59 PM**
+No further CommunicationsAgent training attempts after
+this date. Whatever model state exists on Fri May 16
+morning is final for demo day Sun May 17.
+
+**Ideal path (in order):**
+  Step 1: Rewrite prepare_communications_sft.py
+          Generate 500 rich diverse SFT examples
+          With: varied scenarios, rich impact/remediation,
+          multiple action items, root cause analysis
+          Split: 400 train / 50 RLVR / 50 holdout
+          Time: ~2 hours (Mac, no GPU needed)
+
+  Step 2: SFT training on GPU
+          From: Qwen/Qwen2.5-7B-Instruct base
+          On: 400 training examples
+          Evaluate: SFT vs base model on 50 holdout
+          Ship SFT only if it beats base model
+          Time: ~15 minutes (RTX 4090)
+
+  Step 3: RLVR training on GPU
+          From: SFT checkpoint (not RLVR checkpoint)
+          On: 50 RLVR examples (different from SFT)
+          With: lr=1e-6, beta=0.1 KL penalty
+          With: repetition + length + block penalty
+          Evaluate: RLVR vs SFT vs base on holdout
+          Ship RLVR only if it beats SFT
+          Time: ~55 minutes (RTX 4090)
+
+  Step 4: If fine-tuned wins → use it
+          If base model wins → switch to base model
+          with improved _format_prompt() in
+          communications_agent.py
+
+**Fallback (if drop-dead reached without improvement):**
+  Switch CommunicationsAgent to base Qwen2.5-7B-Instruct
+  with improved prompt engineering in _format_prompt()
+  This already produces good output (tested Tue May 12)
+
+**Key lessons learned (for presentation):**
+  - 80 generic SFT examples degraded base model quality
+  - Reward hacking discovered and fixed
+  - KL divergence penalty added (beta=0.1)
+  - Base model already knows NOC advisory format
+  - Fine-tuning requires: more data, better data,
+    evaluation against base model baseline
+
+**Files to change:**
+  scripts/prepare_communications_sft.py (rewrite)
+  scripts/train_communications_sft.py (holdout eval)
+  scripts/train_communications_rlvr.py (already fixed)
+  communications/communications_agent.py (if base wins)
+
 > Cursor: At the start of every session, check this file.
 > If any reminder is marked BLOCKING for the current session,
 > alert the user before proceeding with any code changes.
