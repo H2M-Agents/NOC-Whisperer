@@ -248,6 +248,44 @@
 **Estimated time:** 1.5 hours including GPU retraining
 **Target:** Post demo day
 
+## REMINDER-012 — Proper Train/Val/Test Split For Fine-Tuned Models
+**Status:** OPEN
+**Priority:** Low — post demo day
+**Last updated:** Tue May 12 2026
+
+**Problem:**
+  Both NormalizerAgent and CommunicationsAgent training
+  scripts use the full dataset for both SFT and RLVR
+  with no holdout set:
+    normalizer_sft_train.jsonl  → used for SFT + RLVR
+    communications_sft_train.jsonl → used for SFT + RLVR
+
+  Contrast: DSPy CorrelationAgent correctly uses:
+    val.json (30 examples) for optimization validation
+    test.json (20 examples) for final evaluation
+
+**Risks:**
+  1. No way to detect overfitting
+  2. RLVR may overfit to reward on seen prompts
+  3. No early stopping signal
+  4. Can't measure generalization to new incident types
+
+**Fix for production:**
+  Generate larger datasets (200+ examples each)
+  Split: 60% SFT train / 20% RLVR train / 20% holdout
+  Add holdout evaluation to run_evaluation.py
+  Use holdout reward as early stopping signal in RLVR
+
+**Note:**
+  For 80-example datasets with temperature sampling,
+  memorization is unlikely — RLVR generates new
+  completions each step. Risk is moderate not critical.
+  DSPy approach (val.json/test.json) is the gold standard
+  to follow for future training runs.
+
+**Estimated time:** 2 hours (data generation + training)
+**Target:** Post demo day
+
 ---
 
 ## REMINDER-001 — SV Cluster Configuration
