@@ -63,6 +63,45 @@ class PrometheusMCP:
 
         return alerts
 
+    def get_service_health(self, device: str) -> bool:
+        """Return True if device has no active threshold breaches.
+
+        Uses 1m lookback window for faster recovery detection
+        after service restoration. Independent of
+        get_threshold_breaches() — no shared state or queries.
+        Returns True (healthy) on any query failure (fail open).
+
+        Args:
+            device: device name as returned by _to_canonical()
+                e.g. 'cart', 'frontend'
+        """
+        queries = [
+            "rate(app_cart_add_item_latency_seconds_sum[1m])"
+            " / rate(app_cart_add_item_latency_seconds_count[1m]) > 0.1",
+            "rate(app_cart_get_cart_latency_seconds_sum[1m])"
+            " / rate(app_cart_get_cart_latency_seconds_count[1m]) > 0.1",
+            'rate(app_frontend_requests_total{status=~"5.."}[1m]) > 0.005',
+            'up{job=~"opentelemetry-demo/.*"} == 0',
+        ]
+        try:
+            for promql in queries:
+                response = self.query(promql)
+                if response.get("status") != "success":
+                    continue
+                result = response.get("data", {}).get("result", [])
+                if not isinstance(result, list):
+                    continue
+                for metric_result in result:
+                    try:
+                        alert = self._to_canonical(metric_result)
+                        if alert.device == device:
+                            return False  # still breaching
+                    except Exception:
+                        continue
+            return True  # no breach found for device — healthy
+        except Exception:
+            return True  # fail open — assume healthy on error
+
     def query(self, promql: str) -> dict:
         """Execute a PromQL instant query and return raw response."""
         try:
