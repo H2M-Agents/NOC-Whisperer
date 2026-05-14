@@ -7,6 +7,7 @@ import os
 import sys
 from pathlib import Path
 from time import perf_counter
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -39,6 +40,24 @@ class SyntheticAlertTool:
             self._fired = True
             return self._alerts
         return []
+
+
+class _StreamingPipelineWithAlertTelemetry(StreamingPipeline):
+    """StreamingPipeline that counts alerts fully processed through ``process_alert`` (live demo summary)."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self._count_live_alerts = bool(kwargs.pop("count_live_alerts", False))
+        self.alerts_processed = 0
+        super().__init__(*args, **kwargs)
+
+    async def process_alert(self, raw_alert: Any) -> None:
+        """Delegate to parent; increment counter in live mode for non-noise alerts."""
+        if getattr(raw_alert, "source_system", "") == "synthetic_noise":
+            await super().process_alert(raw_alert)
+            return
+        await super().process_alert(raw_alert)
+        if self._count_live_alerts:
+            self.alerts_processed += 1
 
 
 class _DemoPrometheus:
@@ -105,7 +124,7 @@ async def run_demo() -> None:
         mcp_tools_list = [synthetic_tool]
         print("SYNTHETIC MODE: Using generated alerts")
 
-    pipeline = StreamingPipeline(
+    pipeline = _StreamingPipelineWithAlertTelemetry(
         mcp_tools=mcp_tools_list,
         normalizer=normalizer,
         triage=triage,
@@ -113,6 +132,7 @@ async def run_demo() -> None:
         communications=communications,
         incident_store=store,
         dashboard=dashboard,
+        count_live_alerts=LIVE_MODE,
     )
 
     batch = BatchReconciler(
@@ -158,7 +178,8 @@ async def run_demo() -> None:
     print(f"\n{'=' * 60}")
     print("DEMO SUMMARY")
     print(f"{'=' * 60}")
-    print(f"Alerts processed:    {len(alerts)}")
+    alerts_processed_display = pipeline.alerts_processed if LIVE_MODE else len(alerts)
+    print(f"Alerts processed:    {alerts_processed_display}")
     print(f"Incidents created:   {len(open_incidents)}")
     if top is not None:
         advisory_status = (
