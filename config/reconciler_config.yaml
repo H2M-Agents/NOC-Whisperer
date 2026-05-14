@@ -4,5 +4,5 @@ reconciler_interval_seconds:
   production:  900
 
 merge_confidence_threshold: 0.75
-close_inactivity_seconds:   1200
+close_inactivity_seconds:   120
 max_react_iterations:       3
