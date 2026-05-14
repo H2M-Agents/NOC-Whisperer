@@ -118,7 +118,10 @@ class CorrelationAgent:
     ) -> List[CanonicalAlert]:
         """Return alerts for correlation (append vs sliding window)."""
         if decision.action == "append" and existing is not None:
-            return list(existing.alerts) + [decision.alert]
+            existing_ids = {a.alert_id for a in existing.alerts}
+            if decision.alert.alert_id not in existing_ids:
+                return list(existing.alerts) + [decision.alert]
+            return list(existing.alerts)
         return list(self.alert_buffer) + [decision.alert]
 
     def _prune_buffer(self, reference_time: datetime) -> None:
