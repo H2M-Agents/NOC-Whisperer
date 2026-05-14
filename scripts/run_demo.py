@@ -61,10 +61,11 @@ async def run_demo() -> None:
     generator = ScenarioDrivenGenerator()
     incident = generator.generate_storm(VALKEY_CART_CASCADE_SCENARIO)
     alerts = incident if isinstance(incident, list) else incident.get("alerts", [])
-    print(
-        f"Generated {len(alerts)} alerts for scenario: "
-        f"{VALKEY_CART_CASCADE_SCENARIO.name}"
-    )
+    if not LIVE_MODE:
+        print(
+            f"Generated {len(alerts)} alerts for scenario: "
+            f"{VALKEY_CART_CASCADE_SCENARIO.name}"
+        )
 
     topology = TopologyMCP("topology/otel_demo_graph.json")
     store = IncidentStore(":memory:")
