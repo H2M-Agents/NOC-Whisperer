@@ -132,6 +132,16 @@ class CommunicationsAgent:
                 "Task: Write a CONFIRMED NOC advisory. Use imperative ACTION REQUIRED lines. "
                 "State impact and remediation as firm facts (confirmed), not speculation.\n"
             )
+        if kind == "resolution":
+            return (
+                f"{header}"
+                "Task: Write a SERVICE RESTORED NOC advisory. "
+                "State that the incident is resolved and all services "
+                "have returned to normal operation. "
+                "Use ACTION COMPLETE lines instead of ACTION REQUIRED. "
+                "Confirm root cause is resolved. "
+                "No further action needed by NOC team.\n"
+            )
         return (
             f"{header}"
             "Task: Write a PRELIMINARY NOC advisory. Emphasize INVESTIGATING status and "

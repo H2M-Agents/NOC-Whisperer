@@ -46,6 +46,20 @@ class MockStoreWithIncident:
         return [self._incident]
 
 
+class MockStoreAppendAfterFirst:
+    """Empty until ``seed`` is set — then exposes one incident for append correlation."""
+
+    def __init__(self) -> None:
+        self._open: Incident | None = None
+
+    def get_open_incidents(self) -> list[Incident]:
+        return [self._open] if self._open is not None else []
+
+    def seed(self, incident: Incident) -> None:
+        """Register the incident returned from an initial ``action=new`` correlate call."""
+        self._open = incident
+
+
 def test_import() -> None:
     """CorrelationAgent must import."""
     assert CorrelationAgent is not None
@@ -141,3 +155,38 @@ def test_roundtrip_incident_from_correlate() -> None:
     restored = Incident.from_dict(inc.to_dict())
     assert restored.incident_id == inc.incident_id
     assert len(restored.alerts) == len(inc.alerts)
+
+
+def test_assemble_cluster_deduplicates_same_alert_id() -> None:
+    """Append with the same alert_id as an existing incident alert does not duplicate."""
+    topo = MockTopologyMCP()
+    store = MockStoreAppendAfterFirst()
+    agent = CorrelationAgent(topo, store, window_seconds=180, mode="development")
+    shared_id = "dup-alert-id"
+    t0 = datetime.now(timezone.utc)
+    first = _alert(shared_id, "valkey-cart", t0)
+    inc_first = agent.correlate(TriageDecision(alert=first, action="new", incident_id=None))
+    store.seed(inc_first)
+    second = _alert(shared_id, "valkey-cart", t0 + timedelta(seconds=10))
+    inc_second = agent.correlate(
+        TriageDecision(alert=second, action="append", incident_id=inc_first.incident_id)
+    )
+    assert len(inc_second.alerts) == 1
+    assert inc_second.alerts[0].alert_id == shared_id
+
+
+def test_assemble_cluster_appends_different_alert_id() -> None:
+    """Append adds a new alert when alert_id differs from alerts already on the incident."""
+    topo = MockTopologyMCP()
+    store = MockStoreAppendAfterFirst()
+    agent = CorrelationAgent(topo, store, window_seconds=180, mode="development")
+    t0 = datetime.now(timezone.utc)
+    a1 = _alert("alert-one", "valkey-cart", t0)
+    inc_first = agent.correlate(TriageDecision(alert=a1, action="new", incident_id=None))
+    store.seed(inc_first)
+    a2 = _alert("alert-two", "valkey-cart", t0 + timedelta(seconds=10))
+    inc_second = agent.correlate(
+        TriageDecision(alert=a2, action="append", incident_id=inc_first.incident_id)
+    )
+    assert len(inc_second.alerts) == 2
+    assert {x.alert_id for x in inc_second.alerts} == {"alert-one", "alert-two"}

@@ -119,3 +119,76 @@ def test_live_get_threshold_breaches_fails_gracefully() -> None:
     result = live.get_threshold_breaches()
     assert isinstance(result, list)
     assert len(result) == 0
+
+
+def test_get_service_health_returns_false_when_device_breaching() -> None:
+    """``get_service_health`` is False when ``query`` vectors include a breach for that device."""
+    from unittest.mock import patch
+
+    from mcp_tools.prometheus_mcp import PrometheusMCP
+
+    live = PrometheusMCP(base_url="http://localhost:1")
+    breach_vector = {
+        "status": "success",
+        "data": {
+            "result": [
+                {
+                    "metric": {
+                        "job": "opentelemetry-demo/cart",
+                        "instance": "cart:8080",
+                    },
+                    "value": [0, "1.0"],
+                }
+            ]
+        },
+    }
+
+    def fake_query(self: PrometheusMCP, _promql: str) -> dict:
+        return breach_vector
+
+    with patch.object(PrometheusMCP, "query", fake_query):
+        assert live.get_service_health("cart") is False
+
+
+def test_get_service_health_returns_true_when_device_not_breaching() -> None:
+    """Healthy when breaches exist only for other devices (e.g. frontend, not cart)."""
+    from unittest.mock import patch
+
+    from mcp_tools.prometheus_mcp import PrometheusMCP
+
+    live = PrometheusMCP(base_url="http://localhost:1")
+    breach_vector = {
+        "status": "success",
+        "data": {
+            "result": [
+                {
+                    "metric": {
+                        "job": "opentelemetry-demo/frontend",
+                        "instance": "frontend:8080",
+                    },
+                    "value": [0, "1.0"],
+                }
+            ]
+        },
+    }
+
+    def fake_query(self: PrometheusMCP, _promql: str) -> dict:
+        return breach_vector
+
+    with patch.object(PrometheusMCP, "query", fake_query):
+        assert live.get_service_health("cart") is True
+
+
+def test_get_service_health_returns_true_on_exception() -> None:
+    """``get_service_health`` fails open (True) when ``query`` raises."""
+    from unittest.mock import patch
+
+    from mcp_tools.prometheus_mcp import PrometheusMCP
+
+    live = PrometheusMCP(base_url="http://localhost:1")
+
+    def boom(self: PrometheusMCP, _promql: str) -> dict:
+        raise RuntimeError("query failed")
+
+    with patch.object(PrometheusMCP, "query", boom):
+        assert live.get_service_health("cart") is True

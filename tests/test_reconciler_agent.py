@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timedelta, timezone
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -119,3 +120,25 @@ def test_acceptance_reconciler_agent_ok() -> None:
     agent = ReconcilerAgent(topo, prom)
     assert agent.reconcile([]) == []
     print("Reconciler agent OK")
+
+
+def test_should_close_returns_true_when_service_healthy() -> None:
+    """Signal path: healthy Prometheus view means the reconciler may close."""
+    topo = MockTopologyMCP()
+    prom = MagicMock()
+    prom.get_service_health.return_value = True
+    agent = ReconcilerAgent(topo, prom)
+    inc = _incident("inc-h", "valkey-cart")
+    assert agent._should_close(inc) is True
+    prom.get_service_health.assert_called_once_with("valkey-cart")
+
+
+def test_should_close_returns_false_when_service_unhealthy() -> None:
+    """Signal path: active breach / unhealthy keeps the incident open."""
+    topo = MockTopologyMCP()
+    prom = MagicMock()
+    prom.get_service_health.return_value = False
+    agent = ReconcilerAgent(topo, prom)
+    inc = _incident("inc-u", "cart")
+    assert agent._should_close(inc) is False
+    prom.get_service_health.assert_called_once_with("cart")

@@ -65,6 +65,56 @@ morning is final for demo day Sun May 17.
   scripts/train_communications_rlvr.py (already fixed)
   communications/communications_agent.py (if base wins)
 
+## REMINDER-014 — Migrate Orchestration Loop To Google ADK
+**Status:** OPEN
+**Priority:** HIGH — before demo day May 24
+**Last updated:** Wed May 14 2026
+
+**What to keep (unchanged):**
+  All MCP tools: PrometheusMCP, JaegerMCP, TopologyMCP,
+                 NodeExporterMCP ✅
+  All LLMs: DSPy + gpt-oss-20b, Ollama, fine-tuned models ✅
+  All agents: Normalizer, Triage, Correlation,
+              Reconciler, Communications ✅
+  All MCP tool interfaces and implementations ✅
+
+**What to replace:**
+  Our custom asyncio orchestration loop
+  (scripts/run_demo.py + orchestrator/streaming_pipeline.py
+   + orchestrator/master_orchestrator.py)
+  → Google ADK Runner
+
+**Why:**
+  ADK provides cleaner agent orchestration
+  Built-in tool calling replaces manual MCP polling
+  Better state management
+  Native MCP tool support
+  Cleaner multi-agent composition
+  Better testing utilities
+  Deploy anywhere (Cloud Run, Vertex AI Agent Engine)
+
+**What changes:**
+  scripts/run_demo.py → ADK Runner entrypoint
+  orchestrator/streaming_pipeline.py → ADK event loop
+  orchestrator/master_orchestrator.py → ADK coordinator agent
+  ~31 integration tests need rewriting
+  ~180 unit tests unchanged
+
+**What does NOT change:**
+  All 5 agent implementations
+  All MCP tool implementations
+  All LLM integrations (DSPy, Ollama, fine-tuned)
+  Data models (CanonicalAlert, Incident, TriageDecision)
+  Dashboard (noc_dashboard.py)
+
+**Installation:**
+  uv pip install google-adk
+
+**Estimated time:** 2-3 days
+**Target:** Before demo day May 24
+**Sequence:** Complete healing scenario first, then ADK migration
+**Reference:** Discussed May 13-14 2026
+
 > Cursor: At the start of every session, check this file.
 > If any reminder is marked BLOCKING for the current session,
 > alert the user before proceeding with any code changes.
