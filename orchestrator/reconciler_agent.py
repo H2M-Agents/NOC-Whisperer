@@ -134,7 +134,19 @@ class ReconcilerAgent:
             return {}
 
     def _should_close(self, incident: Incident) -> bool:
-        """True when no alert activity has refreshed the incident within the inactivity window."""
+        """Signal-based close: True when Prometheus reports the root-cause device is healthy.
+
+        Calls ``get_service_health`` on the Prometheus MCP client. On probe errors,
+        returns False (fail safe — do not close). If ``get_service_health`` is not
+        implemented, falls back to the configured ``close_inactivity_seconds`` idle window.
+        """
+        if callable(getattr(self.prometheus, "get_service_health", None)):
+            try:
+                return bool(
+                    self.prometheus.get_service_health(incident.root_cause_device)
+                )
+            except Exception:
+                return False  # fail safe — don't close on error
         now = datetime.now(timezone.utc)
         updated = incident.updated_at
         if updated.tzinfo is None:
