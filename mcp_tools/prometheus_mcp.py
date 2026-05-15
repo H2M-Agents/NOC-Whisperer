@@ -66,7 +66,7 @@ class PrometheusMCP:
     def get_service_health(self, device: str) -> bool:
         """Return True if device has no active threshold breaches.
 
-        Uses 1m lookback window for faster recovery detection
+        Uses 5m lookback window for recovery detection
         after service restoration. Independent of
         get_threshold_breaches() — no shared state or queries.
         Returns True (healthy) on any query failure (fail open).
@@ -76,11 +76,11 @@ class PrometheusMCP:
                 e.g. 'cart', 'frontend'
         """
         queries = [
-            "rate(app_cart_add_item_latency_seconds_sum[1m])"
-            " / rate(app_cart_add_item_latency_seconds_count[1m]) > 0.1",
-            "rate(app_cart_get_cart_latency_seconds_sum[1m])"
-            " / rate(app_cart_get_cart_latency_seconds_count[1m]) > 0.1",
-            'rate(app_frontend_requests_total{status=~"5.."}[1m]) > 0.005',
+            "rate(app_cart_add_item_latency_seconds_sum[5m])"
+            " / rate(app_cart_add_item_latency_seconds_count[5m]) > 0.1",
+            "rate(app_cart_get_cart_latency_seconds_sum[5m])"
+            " / rate(app_cart_get_cart_latency_seconds_count[5m]) > 0.1",
+            'rate(app_frontend_requests_total{status=~"5.."}[5m]) > 0.005',
             'up{job=~"opentelemetry-demo/.*"} == 0',
         ]
         try:
