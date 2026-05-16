@@ -60,6 +60,9 @@ class BatchReconciler:
                                         print(f"{'=' * 60}\n")
                                     except Exception as e:
                                         print(f"  → Resolution advisory failed: {e}")
-            except Exception:
-                pass
+            except Exception as e:
+                import traceback
+
+                print(f"[ReAct ERROR] {e}")
+                traceback.print_exc()
             await asyncio.sleep(self.interval)
