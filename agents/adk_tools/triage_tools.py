@@ -9,13 +9,16 @@ from agents.triage_agent import TriageAgent
 _triage: TriageAgent | None = None
 
 
-def init_triage(topology_path: str = "topology/otel_demo_graph.json") -> None:
+def init_triage(
+    store: Any,
+    topology_path: str = "topology/otel_demo_graph.json",
+) -> None:
     """Initialize the TriageAgent."""
     global _triage
     from mcp_tools.topology_mcp import TopologyMCP
 
     topology = TopologyMCP(topology_path)
-    _triage = TriageAgent(topology_mcp=topology)
+    _triage = TriageAgent(topology_mcp=topology, incident_store=store)
 
 
 def route_alert(
