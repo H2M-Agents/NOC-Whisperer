@@ -33,9 +33,13 @@ class NOCDashboard:
         """Insert or update one incident in the open incident board state."""
         for idx, existing in enumerate(self.open_incidents):
             if existing.incident_id == incident.incident_id:
-                self.open_incidents[idx] = incident
+                if incident.status != "open":
+                    self.open_incidents.pop(idx)
+                else:
+                    self.open_incidents[idx] = incident
                 return
-        self.open_incidents.append(incident)
+        if incident.status == "open":
+            self.open_incidents.append(incident)
 
     def update_advisory(self, advisory_text: str) -> None:
         """Set the latest NOC advisory text."""

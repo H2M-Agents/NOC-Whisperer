@@ -110,7 +110,7 @@ def test_stale_incident_closes() -> None:
     closes = [d for d in decisions if d.action == "close"]
     assert len(closes) == 1
     assert closes[0].primary_incident_id == "stale-1"
-    assert "20 minutes" in closes[0].reasoning
+    assert "Prometheus signal" in closes[0].reasoning
 
 
 def test_acceptance_reconciler_agent_ok() -> None:

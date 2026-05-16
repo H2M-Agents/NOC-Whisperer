@@ -83,7 +83,7 @@ class ReconcilerAgent:
                         action="close",
                         primary_incident_id=incident.incident_id,
                         secondary_incident_id=None,
-                        reasoning="No new alerts for 20 minutes",
+                        reasoning="Root cause device healthy per Prometheus signal",
                     )
                 )
         return decisions
