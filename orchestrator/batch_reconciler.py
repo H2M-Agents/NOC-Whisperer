@@ -45,6 +45,8 @@ class BatchReconciler:
                             if incident:
                                 incident.status = "closed"
                                 await self.store.upsert(incident)
+                                if self.dashboard:
+                                    self.dashboard.update_incident_board(incident)
                                 print(
                                     f"  → Incident {incident_id[:8]} closed — service healthy"
                                 )
