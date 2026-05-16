@@ -166,31 +166,30 @@ morning is final for demo day Sun May 17.
 ---
 
 ## REMINDER-007 — Fix Noise Alerts In Synthetic Mode
-**Status:** OPEN
-**Blocking:** Synthetic demo cleanliness
+**Status:** OPEN — DEFERRED post demo day
+**Blocking:** Not blocking — demo uses NOC_LIVE_MODE=true
+**Last updated:** Thu May 14 2026
 **Action required:**
   Fix orchestrator/streaming_pipeline.py
   Add early return in process_alert() for synthetic_noise:
     if getattr(alert, "source_system", "") == "synthetic_noise":
         return
   Confidence: 97.5%
-  Apply before demo day.
+
+**Note:** Demo runs with NOC_LIVE_MODE=true — synthetic noise
+  path is not exercised during demo. Not relevant for demo day.
+  Defer to post-demo day May 24.
 
 ## REMINDER-008 — Commit Pending Changes
-**Status:** OPEN
-**Blocking:** Nothing — but must commit before demo
-**Files to commit:**
-  mcp_tools/prometheus_mcp.py
-  mcp_tools/jaeger_mcp.py
-  config/mcp_endpoints.yaml
-  docs/REMINDERS.md
-  scripts/run_demo.py
-  .env.example
+**Status:** RESOLVED — Thu May 14 2026
+
+Git state clean, all changes committed and pushed.
+Working tree clean, branch up to date with origin/main.
 
 ## REMINDER-009 — Second Demo Scenario (Checkout Failure)
-**Status:** OPEN — try after GPU rehearsal
+**Status:** OPEN — DEFERRED
 **Priority:** Nice-to-have — adds demo impact
-**Last updated:** Sat May 9 2026
+**Last updated:** Thu May 14 2026
 
 **What:**
   Test checkout service failure as second demo scenario.
@@ -215,10 +214,13 @@ morning is final for demo day Sun May 17.
   primary valkey-cart scenario works end-to-end.
   Target: Mon May 11 if time permits.
 
+**Note (Thu May 14 2026):** Deferred — healing scenario takes priority.
+  Target moved to post demo day May 24.
+
 ## REMINDER-010 — Fix CommunicationsAgent RLVR Training Data
-**Status:** OPEN — IN PROGRESS
+**Status:** OPEN — multiple training attempts completed
 **Priority:** High — presentation story + demo quality
-**Last updated:** Tue May 12 2026
+**Last updated:** Thu May 14 2026
 
 **Exact diagnosis (confirmed Tue May 12 2026):**
 
@@ -289,8 +291,12 @@ morning is final for demo day Sun May 17.
   models/communications_final_locked/ — retrained model
 
 **Estimated time:** 1.5 hours including GPU training
-**Target:** Wed May 13 2026
+**Target:** Wed May 13 2026 (passed)
 **Fallback:** Ollama qwen3:8b (clean output, already working)
+
+**Note (Thu May 14 2026):** Fine-tuned model in use despite mode instability.
+  Base model comparison done — see session notes.
+  Drop-dead May 15 per REMINDER-013 — no further training after that date.
 
 ## REMINDER-011 — Fix Block-Level Repetition in Communications RLVR
 **Status:** OPEN
@@ -421,17 +427,11 @@ Frontend:   http://10.0.50.50:8080 ✅
 ---
 
 ## REMINDER-003 — GPU Access for Training
-**Status:** OPEN
-**Blocking:** Session 12 (train_normalizer_sft.py) — due Wed Apr 29
-**Action required:**
-  Confirm GPU access on SV cluster or VM before Session 12.
-  Run: nvidia-smi
-  Expected: RTX 5090 or equivalent with 16GB+ VRAM
+**Status:** RESOLVED — Thu May 14 2026
 
-**What to do when resolved:**
-  1. Note GPU model and available VRAM in this file
-  2. Confirm training scripts can be submitted as background jobs
-  3. Mark this reminder as RESOLVED
+GPU training completed successfully on gho-gpu-vm.
+RTX 4090, all models trained.
+Training scripts ran as background jobs without issue.
 
 ---
 

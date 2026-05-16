@@ -1662,25 +1662,34 @@ Prepare for likely Q&A questions:
 
 ---
 
-### Session 29 — Fri May 15 — 1 hour
-**Task:** Timed dress rehearsal
+### Session 29 — Signal-Based Healing (partial: Wed May 14 2026; continue Fri May 15 2026)
+**Task:** Signal-based incident healing — detect recovery, close incidents, fire resolution advisories
+
+**Session close-out — Wed May 14 2026 (partial):**
 
 ```
-Run the complete 15-minute presentation solo.
-Use a stopwatch. Record actual times for each section.
-Adjust notes where you overrun.
+Completed:
+  ✅ Alert dedup fix in _assemble_cluster()
+  ✅ get_service_health() MCP method — validated live
+     Recovery detected in ~3 minutes ✅
+  ✅ ReconcilerAgent signal-based close — validated live
+     Should close True when healthy, False when unhealthy ✅
+  ✅ Resolution advisory prompt added to CommunicationsAgent
+  ✅ 7 new tests added (218 total, all passing in ~12s)
+  ✅ REMINDER-014 added — Google ADK migration before demo
+  ✅ REMINDERS updated — 003, 008 resolved; 007, 009, 010 updated
 
-Run live demo 3 times consecutively:
-  1. Stop valkey-cart — run through — restore valkey-cart
-  2. Stop valkey-cart — run through — restore valkey-cart
-  3. Stop valkey-cart — run through — restore valkey-cart
+Remaining for next session (Fri May 15):
+  ⏳ Step 5: Fire resolution advisory when incident closes
+             (find in batch_reconciler.py where close decisions fire)
+  ⏳ Step 6: Tests for resolution advisory firing
+  ⏳ Step 7: Full healing demo on GPU host
+  ⏳ REMINDER-014: Google ADK orchestration migration
 
-Verify demo is reproducible every time.
-Check: does the architecture SVG display clearly when zoomed?
-Check: do evaluation tables print clearly in terminal?
-
-Document any remaining issues in docs/demo_notes.md.
-Fix only if critical.
+Key metrics (Wed May 14 2026):
+  Tests: 218 passing in ~12s
+  Demo day: May 24 (10 days remaining)
+  Drop-dead for CommunicationsAgent: Fri May 15 11:59 PM
 ```
 
 ---

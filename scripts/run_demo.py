@@ -138,6 +138,8 @@ async def run_demo() -> None:
     batch = BatchReconciler(
         reconciler_agent=reconciler,
         incident_store=store,
+        communications=communications,
+        dashboard=dashboard,
         interval_seconds=15,
     )
 
