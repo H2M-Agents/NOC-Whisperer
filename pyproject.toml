@@ -15,8 +15,7 @@ dependencies = [
     "numpy",
     "pyyaml",
     "ollama",
-    "pytest",
-    "pytest-asyncio",
+    "google-adk",
 ]
 
 [dependency-groups]
@@ -34,4 +33,5 @@ gpu = [
 dev-dependencies = [
     "pytest",
     "pytest-asyncio",
+    "typeguard",
 ]
