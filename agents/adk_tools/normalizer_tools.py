@@ -5,12 +5,19 @@ from typing import Any
 from agents.normalizer_agent import NormalizerAgent
 
 _normalizer: NormalizerAgent | None = None
+_dashboard: Any = None
 
 
 def init_normalizer(model_path: str | None = None) -> None:
     """Initialize the NormalizerAgent."""
     global _normalizer
     _normalizer = NormalizerAgent(model_path=model_path)
+
+
+def init_dashboard(dashboard: Any) -> None:
+    """Initialize dashboard reference for alert stream updates."""
+    global _dashboard
+    _dashboard = dashboard
 
 
 def normalize_alert(
@@ -37,4 +44,9 @@ def normalize_alert(
         "threshold": threshold,
     }
     alert = _normalizer.process(raw, source_system)
+    if _dashboard is not None:
+        try:
+            _dashboard.update_alert_stream(alert)
+        except Exception:
+            pass
     return alert.to_dict()

@@ -6,12 +6,19 @@ from adapters.canonical_alert import Incident
 from communications.communications_agent import CommunicationsAgent
 
 _communications: CommunicationsAgent | None = None
+_dashboard: Any = None
 
 
 def init_communications() -> None:
     """Initialize the CommunicationsAgent."""
     global _communications
     _communications = CommunicationsAgent()
+
+
+def init_dashboard(dashboard: Any) -> None:
+    """Initialize dashboard reference for advisory updates."""
+    global _dashboard
+    _dashboard = dashboard
 
 
 def generate_advisory(incident_id: str, advisory_type: str) -> str:
@@ -34,7 +41,10 @@ def generate_advisory(incident_id: str, advisory_type: str) -> str:
     incident = store.get_incident(incident_id)
     if incident is None:
         return ""
-    return _communications.generate(incident, advisory_type=advisory_type)
+    advisory = _communications.generate(incident, advisory_type=advisory_type)
+    if _dashboard is not None and advisory:
+        _dashboard.update_advisory(advisory)
+    return advisory
 
 
 _store: Any = None

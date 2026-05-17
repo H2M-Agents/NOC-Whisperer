@@ -15,10 +15,17 @@ from google.adk.sessions import InMemorySessionService
 from google.genai.types import Content, Part
 from rich.console import Console
 
-from agents.adk_tools.communications_tools import init_communications, init_store
+from agents.adk_tools.communications_tools import (
+    init_communications,
+    init_dashboard as init_comms_dashboard,
+    init_store,
+)
 from agents.adk_tools.correlation_tools import init_correlation
 from agents.adk_tools.incident_tools import init_incident_store
-from agents.adk_tools.normalizer_tools import init_normalizer
+from agents.adk_tools.normalizer_tools import (
+    init_dashboard as init_norm_dashboard,
+    init_normalizer,
+)
 from agents.adk_tools.prometheus_tools import init_prometheus
 from agents.adk_tools.triage_tools import init_triage
 from dashboard.noc_dashboard import NOCDashboard
@@ -78,6 +85,8 @@ async def main() -> None:
 
     store = IncidentStore(":memory:")
     dashboard = NOCDashboard()
+    init_comms_dashboard(dashboard)
+    init_norm_dashboard(dashboard)
 
     init_prometheus(PROMETHEUS_URL)
     init_normalizer()
