@@ -54,7 +54,12 @@ Be thorough — process every alert and every incident.
 
 def build_noc_orchestrator(model_name: str = "openai/gpt-oss-20b") -> LlmAgent:
     """Build and return the NOC LlmAgent orchestrator."""
-    model = LiteLlm(model=model_name)
+    model = LiteLlm(
+        model=model_name,
+        api_base=os.environ.get("OPENAI_API_BASE"),
+        api_key=os.environ.get("OPENAI_API_KEY"),
+        extra_body={"model": model_name},
+    )
 
     tools = [
         FunctionTool(get_active_alerts),
