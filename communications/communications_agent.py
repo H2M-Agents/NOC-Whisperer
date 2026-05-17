@@ -2,10 +2,28 @@
 
 from __future__ import annotations
 
+import re
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 from adapters.canonical_alert import Incident
+
+_LA_TZ = ZoneInfo("America/Los_Angeles")
+
+_STALE_DATE_RE = re.compile(
+    r"\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}(?:\s+(?:PST|PDT|PT))?"
+)
+
+
+def _la_now_str() -> str:
+    """Return current America/Los_Angeles time as 'YYYY-MM-DD HH:MM PDT/PST'.
+
+    Uses zoneinfo so DST is handled correctly (PDT=UTC-7 in summer,
+    PST=UTC-8 in winter). Never hardcode -8 or -7.
+    """
+    return datetime.now(_LA_TZ).strftime("%Y-%m-%d %H:%M %Z")
 
 
 class CommunicationsAgent:
@@ -59,8 +77,11 @@ class CommunicationsAgent:
             self._loaded = True
         prompt = self._format_prompt(incident, advisory_type)
         if self._backend != "ollama" and self._model is not None:
-            return self._infer_local(prompt)
-        return self._infer_ollama(prompt)
+            raw_advisory = self._infer_local(prompt)
+        else:
+            raw_advisory = self._infer_ollama(prompt)
+        advisory = _STALE_DATE_RE.sub(_la_now_str(), raw_advisory)
+        return advisory
 
     def _infer_local(self, prompt: str) -> str:
         try:
@@ -120,7 +141,9 @@ class CommunicationsAgent:
     def _format_prompt(self, incident: Incident, advisory_type: str) -> str:
         kind = (advisory_type or "preliminary").strip().lower()
         services = ", ".join(incident.affected_services)
+        now_str = _la_now_str()
         header = (
+            f"Current time: {now_str}\n"
             f"Incident title: {incident.incident_title}\n"
             f"Suspected / root-cause device: {incident.root_cause_device}\n"
             f"Affected services: {services}\n"
