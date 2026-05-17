@@ -59,6 +59,10 @@ def correlate_alert(
         incident_id=incident_id,
     )
     incident = _correlation.correlate(decision)
+    try:
+        _correlation.store._upsert_sync(incident)
+    except Exception:
+        pass
     return {
         "incident_id": incident.incident_id,
         "root_cause_device": incident.root_cause_device,
