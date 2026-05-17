@@ -115,6 +115,42 @@ morning is final for demo day Sun May 17.
 **Sequence:** Complete healing scenario first, then ADK migration
 **Reference:** Discussed May 13-14 2026
 
+## REMINDER-015 — Fix Hardcoded Dates In Advisory Output
+**Status:** OPEN
+**Priority:** Medium — before demo day May 24
+**Last updated:** Sat May 17 2026
+
+**Problem:**
+  CommunicationsAgent advisory output shows hardcoded
+  dates from training data:
+    "2024-01-17 13:00 PST" ← wrong
+    "2023-10-04 17:18 PST" ← wrong
+  Should show current date/time instead.
+
+**Root cause:**
+  Fine-tuned model learned date format from SFT examples
+  which had hardcoded dates. Model generates similar
+  dates at inference time.
+
+**Fix:**
+  Post-process advisory text in CommunicationsAgent.generate()
+  Replace any date pattern with current PST datetime:
+    import re
+    from datetime import datetime, timezone, timedelta
+    pst = timezone(timedelta(hours=-8))
+    now = datetime.now(pst).strftime("%Y-%m-%d %H:%M")
+    advisory = re.sub(
+        r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}',
+        now,
+        advisory
+    )
+
+**Files to change:**
+  communications/communications_agent.py
+
+**Estimated time:** 30 minutes
+**Target:** Before demo day May 24
+
 > Cursor: At the start of every session, check this file.
 > If any reminder is marked BLOCKING for the current session,
 > alert the user before proceeding with any code changes.
