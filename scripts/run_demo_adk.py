@@ -108,11 +108,6 @@ async def main() -> None:
         session_service=session_service,
     )
 
-    session = await session_service.create_session(
-        app_name="noc_whisperer",
-        user_id="noc_operator",
-    )
-
     print("NOC Whisperer — Google ADK Mode")
     print(f"Prometheus: {PROMETHEUS_URL}")
     print(f"Poll interval: {POLL_INTERVAL}s")
@@ -124,6 +119,11 @@ async def main() -> None:
         while True:
             cycle += 1
             print(f"\n[Cycle {cycle}] Monitoring...")
+
+            session = await session_service.create_session(
+                app_name="noc_whisperer",
+                user_id="noc_operator",
+            )
 
             message = Content(
                 role="user",
@@ -137,23 +137,27 @@ async def main() -> None:
                 ],
             )
 
-            async for event in runner.run_async(
-                user_id="noc_operator",
-                session_id=session.id,
-                new_message=message,
-            ):
-                if hasattr(event, "content") and event.content:
-                    for part in event.content.parts:
-                        if hasattr(part, "text") and part.text:
-                            print(f"[Agent] {part.text[:200]}")
+            try:
+                async for event in runner.run_async(
+                    user_id="noc_operator",
+                    session_id=session.id,
+                    new_message=message,
+                ):
+                    if hasattr(event, "content") and event.content:
+                        for part in event.content.parts:
+                            if hasattr(part, "text") and part.text:
+                                print(f"[Agent] {part.text[:200]}")
 
-                if hasattr(event, "actions") and event.actions:
-                    for action in event.actions:
-                        if (
-                            hasattr(action, "tool_name")
-                            and action.tool_name == "generate_advisory"
-                        ):
-                            pass  # advisory already stored via tool
+                    if hasattr(event, "actions") and event.actions:
+                        for action in event.actions:
+                            if (
+                                hasattr(action, "tool_name")
+                                and action.tool_name == "generate_advisory"
+                            ):
+                                pass  # advisory already stored via tool
+            except Exception as e:
+                print(f"[ADK] Cycle {cycle} error: {type(e).__name__} — {str(e)[:100]}")
+                print("[ADK] Continuing to next cycle...")
 
             open_incidents = store.get_open_incidents()
             for incident in open_incidents:
