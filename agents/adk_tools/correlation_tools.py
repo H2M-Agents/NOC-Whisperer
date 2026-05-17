@@ -70,4 +70,6 @@ def correlate_alert(
         "confidence": incident.confidence,
         "alert_count": len(incident.alerts),
         "status": incident.status,
+        "preliminary_advisory_sent": incident.preliminary_advisory_sent,
+        "confirmed_advisory_sent": incident.confirmed_advisory_sent,
     }

@@ -28,22 +28,42 @@ def generate_advisory(incident_id: str, advisory_type: str) -> str:
     Call with 'confirmed' when confidence > 0.85 AND alert_count >= 2.
     Call with 'preliminary' when confidence > 0.50 AND alert_count >= 2.
     Call with 'resolution' when incident is being closed after healing.
-    Returns advisory text string.
+
+    Returns advisory text, 'already_sent:<type>' if already fired,
+    or empty string on error.
     """
     if _communications is None:
         return ""
-    from orchestrator.incident_store import IncidentStore
 
-    # get incident from store
     store = _get_store()
     if store is None:
         return ""
+
     incident = store.get_incident(incident_id)
     if incident is None:
         return ""
+
+    # Bug A fix: guard — do not regenerate if already sent
+    if advisory_type == "preliminary" and incident.preliminary_advisory_sent:
+        return "already_sent:preliminary"
+    if advisory_type == "confirmed" and incident.confirmed_advisory_sent:
+        return "already_sent:confirmed"
+
     advisory = _communications.generate(incident, advisory_type=advisory_type)
-    if _dashboard is not None and advisory:
-        _dashboard.update_advisory(advisory)
+
+    if advisory:
+        # Bug B fix: persist the sent flag using the targeted
+        # _mark_advisory_sent_sync() — surgical SQL UPDATE,
+        # thread-safe under RLock, does not touch other columns.
+        if advisory_type in ("preliminary", "confirmed"):
+            try:
+                store._mark_advisory_sent_sync(incident_id, advisory_type)
+            except Exception:
+                pass
+
+        if _dashboard is not None:
+            _dashboard.update_advisory(advisory)
+
     return advisory
 
 
