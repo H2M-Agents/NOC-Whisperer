@@ -42,7 +42,11 @@ def _patched_get_tool(function_call, tools_dict):
 
     gpt-oss-20b sometimes appends <|channel|>commentary to tool names.
     """
-    clean_name = function_call.name.split("<")[0].split("|")[0].strip()
+    import re
+
+    # Strip any non-alphanumeric/underscore suffix from tool name
+    match = re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*", function_call.name)
+    clean_name = match.group(0) if match else function_call.name
     if clean_name != function_call.name:
         print(f"[ADK] Sanitized tool name: {function_call.name!r} -> {clean_name!r}")
         function_call.name = clean_name
