@@ -25,6 +25,25 @@ from dashboard.noc_dashboard import NOCDashboard
 from orchestrator.adk_orchestrator import build_noc_orchestrator
 from orchestrator.incident_store import IncidentStore
 
+import google.adk.flows.llm_flows.functions as _adk_functions
+
+_original_get_tool = _adk_functions._get_tool
+
+
+def _patched_get_tool(function_call, tools_dict):
+    """Sanitize hallucinated token suffixes from tool names.
+
+    gpt-oss-20b sometimes appends <|channel|>commentary to tool names.
+    """
+    clean_name = function_call.name.split("<")[0].split("|")[0].strip()
+    if clean_name != function_call.name:
+        print(f"[ADK] Sanitized tool name: {function_call.name!r} -> {clean_name!r}")
+        function_call.name = clean_name
+    return _original_get_tool(function_call, tools_dict)
+
+
+_adk_functions._get_tool = _patched_get_tool
+
 PROMETHEUS_URL = os.environ.get("PROMETHEUS_URL", "http://10.0.50.50:9090")
 POLL_INTERVAL = 15
 
