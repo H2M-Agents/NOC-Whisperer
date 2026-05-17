@@ -147,14 +147,13 @@ async def main() -> None:
                         for part in event.content.parts:
                             if hasattr(part, "text") and part.text:
                                 print(f"[Agent] {part.text[:200]}")
-
                     if hasattr(event, "actions") and event.actions:
                         for action in event.actions:
                             if (
                                 hasattr(action, "tool_name")
                                 and action.tool_name == "generate_advisory"
                             ):
-                                pass  # advisory already stored via tool
+                                pass
             except Exception as e:
                 print(f"[ADK] Cycle {cycle} error: {type(e).__name__} — {str(e)[:100]}")
                 print("[ADK] Continuing to next cycle...")
