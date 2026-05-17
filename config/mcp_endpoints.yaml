@@ -1,13 +1,13 @@
 jaeger:
-  base_url: http://10.0.50.50:16686
+  base_url: http://10.0.50.60:16686
   api_prefix: /jaeger/ui
   note: Jaeger v2 — API served under /jaeger/ui path
 
 prometheus:
-  base_url: http://10.0.50.50:9090
+  base_url: http://10.0.50.60:9090
   query_endpoint: /api/v1/query
   range_endpoint: /api/v1/query_range
 
 node_exporter:
-  prometheus_base_url: http://10.0.50.50:9090
+  prometheus_base_url: http://10.0.50.60:9090
   job_name: node

@@ -44,7 +44,26 @@ def _patched_get_tool(function_call, tools_dict):
 
 _adk_functions._get_tool = _patched_get_tool
 
-PROMETHEUS_URL = os.environ.get("PROMETHEUS_URL", "http://10.0.50.50:9090")
+import yaml
+
+
+def _load_mcp_config() -> dict:
+    try:
+        with open("config/mcp_endpoints.yaml", "r") as f:
+            return yaml.safe_load(f)
+    except Exception:
+        return {}
+
+
+_mcp_config = _load_mcp_config()
+PROMETHEUS_URL = os.environ.get(
+    "PROMETHEUS_URL",
+    _mcp_config.get("prometheus", {}).get("base_url", "http://10.0.50.60:9090"),
+)
+JAEGER_URL = os.environ.get(
+    "JAEGER_URL",
+    _mcp_config.get("jaeger", {}).get("base_url", "http://10.0.50.60:16686"),
+)
 POLL_INTERVAL = 15
 
 
