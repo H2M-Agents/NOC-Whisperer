@@ -155,6 +155,15 @@ class PrometheusMCP:
             device = job if job else "unknown"
         device = str(device)
 
+        # Attribute ad-dependency 5xx to the actual failing
+        # service (ad) not the symptom service (frontend).
+        # ad and cart are topologically isolated so this prevents
+        # the valkey-cart cascade from being appended to the
+        # ad/frontend noise incident. Verified: are_related(
+        # "ad", "cart") == False in otel_demo_graph.json.
+        if device == "frontend" and labels.get("target") == "/api/data":
+            device = "ad"
+
         value: float
         try:
             value = float(raw_value[1]) if isinstance(raw_value, list) and len(raw_value) >= 2 else 0.0

@@ -192,3 +192,95 @@ def test_get_service_health_returns_true_on_exception() -> None:
 
     with patch.object(PrometheusMCP, "query", boom):
         assert live.get_service_health("cart") is True
+
+
+# ── Option C relabeling: frontend /api/data → ad ─────────
+
+
+def test_to_canonical_frontend_api_data_relabeled_to_ad() -> None:
+    """frontend + target=/api/data must produce device=ad."""
+    import time
+
+    from mcp_tools.prometheus_mcp import PrometheusMCP
+
+    live = PrometheusMCP(base_url="http://localhost:1")
+    metric_result = {
+        "metric": {
+            "service_name": "frontend",
+            "job": "opentelemetry-demo/frontend",
+            "instance": "frontend:8080",
+            "target": "/api/data",
+            "status": "500",
+        },
+        "value": [time.time(), "0.88"],
+    }
+    alert = live._to_canonical(metric_result)
+    assert alert.device == "ad", (
+        f"Expected device='ad' for frontend /api/data 5xx, got {alert.device!r}"
+    )
+
+
+def test_to_canonical_frontend_other_target_not_relabeled() -> None:
+    """frontend + target other than /api/data stays device=frontend."""
+    import time
+
+    from mcp_tools.prometheus_mcp import PrometheusMCP
+
+    live = PrometheusMCP(base_url="http://localhost:1")
+    metric_result = {
+        "metric": {
+            "service_name": "frontend",
+            "job": "opentelemetry-demo/frontend",
+            "instance": "frontend:8080",
+            "target": "/checkout",
+            "status": "500",
+        },
+        "value": [time.time(), "0.12"],
+    }
+    alert = live._to_canonical(metric_result)
+    assert alert.device == "frontend", (
+        f"Expected device='frontend' for /checkout 5xx, got {alert.device!r}"
+    )
+
+
+def test_to_canonical_frontend_no_target_not_relabeled() -> None:
+    """frontend with no target label stays device=frontend."""
+    import time
+
+    from mcp_tools.prometheus_mcp import PrometheusMCP
+
+    live = PrometheusMCP(base_url="http://localhost:1")
+    metric_result = {
+        "metric": {
+            "service_name": "frontend",
+            "job": "opentelemetry-demo/frontend",
+            "instance": "frontend:8080",
+        },
+        "value": [time.time(), "0.05"],
+    }
+    alert = live._to_canonical(metric_result)
+    assert alert.device == "frontend", (
+        f"Expected device='frontend' with no target label, got {alert.device!r}"
+    )
+
+
+def test_to_canonical_non_frontend_with_api_data_not_relabeled() -> None:
+    """Non-frontend device must never be relabeled even with target=/api/data."""
+    import time
+
+    from mcp_tools.prometheus_mcp import PrometheusMCP
+
+    live = PrometheusMCP(base_url="http://localhost:1")
+    metric_result = {
+        "metric": {
+            "service_name": "cart",
+            "job": "opentelemetry-demo/cart",
+            "instance": "cart:8080",
+            "target": "/api/data",
+        },
+        "value": [time.time(), "0.50"],
+    }
+    alert = live._to_canonical(metric_result)
+    assert alert.device == "cart", (
+        f"Expected device='cart' unchanged, got {alert.device!r}"
+    )
