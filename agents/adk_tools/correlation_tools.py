@@ -15,7 +15,11 @@ def init_correlation(store: Any, topology_path: str = "topology/otel_demo_graph.
     from mcp_tools.topology_mcp import TopologyMCP
 
     topology = TopologyMCP(topology_path)
-    _correlation = CorrelationAgent(topology_mcp=topology, incident_store=store)
+    _correlation = CorrelationAgent(
+        topology_mcp=topology,
+        incident_store=store,
+        mode="production",
+    )
 
 
 def correlate_alert(
