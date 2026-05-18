@@ -76,3 +76,59 @@ def test_close_incident_marks_resolved() -> None:
     assert result == {"incident_id": "inc-close-1", "status": "resolved"}
     assert incident.status == "resolved"
     mock_store.upsert.assert_awaited_once_with(incident)
+
+
+def test_close_incident_calls_update_incident_board() -> None:
+    """close_incident() calls update_incident_board with the resolved incident when dashboard is wired."""
+    when = datetime.now(timezone.utc)
+    incident = Incident(
+        incident_id="inc-board-1",
+        created_at=when,
+        updated_at=when,
+        status="open",
+        root_cause_device="cart",
+        incident_title="Cart outage",
+        affected_services=["cart"],
+        confidence=0.9,
+        recommended_action="investigate",
+        alerts=[
+            CanonicalAlert(
+                alert_id="a1",
+                timestamp=when,
+                domain="application",
+                severity="major",
+                device="cart",
+                metric="m",
+                message="msg",
+                source_system="prometheus",
+                value=1.0,
+                threshold=0.5,
+                confidence=0.9,
+                raw_payload={},
+            )
+        ],
+    )
+    mock_store = MagicMock()
+    mock_store.get_incident.return_value = incident
+    mock_store.upsert = AsyncMock()
+
+    mock_dashboard = MagicMock()
+    incident_tools.init_incident_store(mock_store)
+    incident_tools.init_dashboard(mock_dashboard)
+
+    result = incident_tools.close_incident("inc-board-1")
+
+    assert result == {"incident_id": "inc-board-1", "status": "resolved"}
+    mock_dashboard.update_incident_board.assert_called_once()
+    called_with = mock_dashboard.update_incident_board.call_args[0][0]
+    assert called_with.status == "resolved"
+
+
+def test_close_incident_no_dashboard_does_not_crash() -> None:
+    """close_incident() is safe when dashboard is not wired."""
+    incident_tools.init_dashboard(None)
+    mock_store = MagicMock()
+    mock_store.get_incident.return_value = None
+    incident_tools.init_incident_store(mock_store)
+    result = incident_tools.close_incident("missing-id")
+    assert result == {"error": "Incident missing-id not found"}

@@ -3,12 +3,19 @@ from __future__ import annotations
 from typing import Any
 
 _store: Any = None
+_dashboard: Any = None
 
 
 def init_incident_store(store: Any) -> None:
     """Initialize the incident store."""
     global _store
     _store = store
+
+
+def init_dashboard(dashboard: Any) -> None:
+    """Wire NOCDashboard so close_incident() can remove resolved incidents from the board."""
+    global _dashboard
+    _dashboard = dashboard
 
 
 def check_open_incidents() -> list[dict[str, Any]]:
@@ -56,4 +63,6 @@ def close_incident(incident_id: str) -> dict[str, Any]:
         loop.create_task(_store.upsert(incident))
     except RuntimeError:
         asyncio.run(_store.upsert(incident))
+    if _dashboard is not None:
+        _dashboard.update_incident_board(incident)
     return {"incident_id": incident_id, "status": "resolved"}

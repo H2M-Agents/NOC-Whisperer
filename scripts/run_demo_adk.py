@@ -23,6 +23,7 @@ from agents.adk_tools.communications_tools import (
     init_store,
 )
 from agents.adk_tools.correlation_tools import init_correlation
+from agents.adk_tools.incident_tools import init_dashboard as init_incident_dashboard
 from agents.adk_tools.incident_tools import init_incident_store
 from agents.adk_tools.normalizer_tools import (
     init_dashboard as init_norm_dashboard,
@@ -102,6 +103,7 @@ async def main() -> None:
     dashboard = NOCDashboard()
     init_comms_dashboard(dashboard)
     init_norm_dashboard(dashboard)
+    init_incident_dashboard(dashboard)
 
     init_prometheus(PROMETHEUS_URL)
     init_normalizer()
