@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -108,3 +109,179 @@ def test_correlate_alert_returns_empty_when_not_initialized():
     with patch("agents.adk_tools.correlation_tools._correlation", None):
         result = correlate_alert(**_CORRELATE_KWARGS)
     assert result == {}
+
+
+# ── same-cycle duplicate guard tests ─────────────────────
+
+
+def _make_open_incident(device: str, age_seconds: float = 10.0):
+    """Return a mock Incident recent enough to trigger the guard."""
+    inc = MagicMock()
+    inc.root_cause_device = device
+    inc.incident_id = "INC-EXISTING-001"
+    inc.created_at = datetime.now(timezone.utc) - timedelta(seconds=age_seconds)
+    inc.preliminary_advisory_sent = False
+    inc.confirmed_advisory_sent = False
+    return inc
+
+
+def test_same_cycle_duplicate_redirected_to_append():
+    """Second action=new for same device within 60s becomes append."""
+    existing = _make_open_incident("cart", age_seconds=10)
+    mock_correlation = _make_mock_correlation(
+        _make_mock_incident(preliminary_advisory_sent=False)
+    )
+    mock_correlation.store.get_open_incidents.return_value = [existing]
+
+    captured = {}
+
+    def capture_correlate(decision):
+        captured["action"] = decision.action
+        captured["incident_id"] = decision.incident_id
+        return _make_mock_incident()
+
+    mock_correlation.correlate.side_effect = capture_correlate
+
+    with patch(
+        "agents.adk_tools.correlation_tools._correlation",
+        mock_correlation,
+    ):
+        correlate_alert(
+            **{
+                **_CORRELATE_KWARGS,
+                "device": "cart",
+                "action": "new",
+                "incident_id": None,
+            }
+        )
+
+    assert captured["action"] == "append", (
+        "Expected action=append for same-device duplicate within 60s"
+    )
+    assert captured["incident_id"] == "INC-EXISTING-001"
+
+
+def test_same_cycle_duplicate_uses_existing_incident_id():
+    """Redirected append uses the existing incident_id from store."""
+    existing = _make_open_incident("cart", age_seconds=5)
+    mock_correlation = _make_mock_correlation(_make_mock_incident())
+    mock_correlation.store.get_open_incidents.return_value = [existing]
+
+    captured = {}
+
+    def capture(decision):
+        captured["incident_id"] = decision.incident_id
+        return _make_mock_incident()
+
+    mock_correlation.correlate.side_effect = capture
+
+    with patch(
+        "agents.adk_tools.correlation_tools._correlation",
+        mock_correlation,
+    ):
+        correlate_alert(
+            **{
+                **_CORRELATE_KWARGS,
+                "device": "cart",
+                "action": "new",
+                "incident_id": None,
+            }
+        )
+
+    assert captured["incident_id"] == "INC-EXISTING-001"
+
+
+def test_stale_incident_not_redirected():
+    """action=new stays new when matching incident is older than 60s."""
+    existing = _make_open_incident("cart", age_seconds=61)
+    mock_correlation = _make_mock_correlation(_make_mock_incident())
+    mock_correlation.store.get_open_incidents.return_value = [existing]
+
+    captured = {}
+
+    def capture(decision):
+        captured["action"] = decision.action
+        return _make_mock_incident()
+
+    mock_correlation.correlate.side_effect = capture
+
+    with patch(
+        "agents.adk_tools.correlation_tools._correlation",
+        mock_correlation,
+    ):
+        correlate_alert(
+            **{
+                **_CORRELATE_KWARGS,
+                "device": "cart",
+                "action": "new",
+                "incident_id": None,
+            }
+        )
+
+    assert captured["action"] == "new", (
+        "Expected action=new when existing incident is older than 60s"
+    )
+
+
+def test_different_device_not_redirected():
+    """action=new stays new when existing incident has different device."""
+    existing = _make_open_incident("ad", age_seconds=5)
+    mock_correlation = _make_mock_correlation(_make_mock_incident())
+    mock_correlation.store.get_open_incidents.return_value = [existing]
+
+    captured = {}
+
+    def capture(decision):
+        captured["action"] = decision.action
+        return _make_mock_incident()
+
+    mock_correlation.correlate.side_effect = capture
+
+    with patch(
+        "agents.adk_tools.correlation_tools._correlation",
+        mock_correlation,
+    ):
+        correlate_alert(
+            **{
+                **_CORRELATE_KWARGS,
+                "device": "cart",
+                "action": "new",
+                "incident_id": None,
+            }
+        )
+
+    assert captured["action"] == "new", (
+        "Expected action=new when existing incident has different device"
+    )
+
+
+def test_existing_append_not_affected_by_guard():
+    """action=append bypasses the duplicate guard entirely."""
+    existing = _make_open_incident("cart", age_seconds=5)
+    mock_correlation = _make_mock_correlation(_make_mock_incident())
+    mock_correlation.store.get_open_incidents.return_value = [existing]
+
+    captured = {}
+
+    def capture(decision):
+        captured["action"] = decision.action
+        captured["incident_id"] = decision.incident_id
+        return _make_mock_incident()
+
+    mock_correlation.correlate.side_effect = capture
+
+    with patch(
+        "agents.adk_tools.correlation_tools._correlation",
+        mock_correlation,
+    ):
+        correlate_alert(
+            **{
+                **_CORRELATE_KWARGS,
+                "device": "cart",
+                "action": "append",
+                "incident_id": "INC-EXPLICIT-999",
+            }
+        )
+
+    assert captured["action"] == "append"
+    assert captured["incident_id"] == "INC-EXPLICIT-999"
