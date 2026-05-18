@@ -191,9 +191,12 @@ def test_same_cycle_duplicate_uses_existing_incident_id():
     assert captured["incident_id"] == "INC-EXISTING-001"
 
 
-def test_stale_incident_not_redirected():
-    """action=new stays new when matching incident is older than 60s."""
-    existing = _make_open_incident("cart", age_seconds=61)
+def test_old_open_incident_still_redirected_to_append():
+    """Any open incident with matching device redirects to append regardless of age.
+
+    get_open_incidents() only returns open incidents so age is irrelevant.
+    """
+    existing = _make_open_incident("cart", age_seconds=300)
     mock_correlation = _make_mock_correlation(_make_mock_incident())
     mock_correlation.store.get_open_incidents.return_value = [existing]
 
@@ -201,6 +204,7 @@ def test_stale_incident_not_redirected():
 
     def capture(decision):
         captured["action"] = decision.action
+        captured["incident_id"] = decision.incident_id
         return _make_mock_incident()
 
     mock_correlation.correlate.side_effect = capture
@@ -218,9 +222,10 @@ def test_stale_incident_not_redirected():
             }
         )
 
-    assert captured["action"] == "new", (
-        "Expected action=new when existing incident is older than 60s"
+    assert captured["action"] == "append", (
+        "Expected action=append even for open incident older than 60s"
     )
+    assert captured["incident_id"] == "INC-EXISTING-001"
 
 
 def test_different_device_not_redirected():

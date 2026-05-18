@@ -5,7 +5,9 @@ from __future__ import annotations
 import asyncio
 import os
 import sys
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -34,6 +36,15 @@ from orchestrator.incident_store import IncidentStore
 
 import google.adk.flows.llm_flows.functions as _adk_functions
 
+
+def _ts() -> str:
+    """Current America/Los_Angeles time as HH:MM:SS PDT/PST for log line prefixes.
+
+    DST-aware via zoneinfo.
+    """
+    return datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%H:%M:%S %Z")
+
+
 _original_get_tool = _adk_functions._get_tool
 
 
@@ -48,7 +59,7 @@ def _patched_get_tool(function_call, tools_dict):
     match = re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*", function_call.name)
     clean_name = match.group(0) if match else function_call.name
     if clean_name != function_call.name:
-        print(f"[ADK] Sanitized tool name: {function_call.name!r} -> {clean_name!r}")
+        print(f"[{_ts()}] [ADK] Sanitized tool name: {function_call.name!r} -> {clean_name!r}")
         function_call.name = clean_name
     return _original_get_tool(function_call, tools_dict)
 
@@ -146,7 +157,7 @@ async def main() -> None:
                     if hasattr(event, "content") and event.content:
                         for part in event.content.parts:
                             if hasattr(part, "text") and part.text:
-                                print(f"[Agent] {part.text[:200]}")
+                                print(f"[{_ts()}] [Agent] {part.text[:200]}")
                     if hasattr(event, "actions") and event.actions:
                         for action in event.actions:
                             if (
@@ -155,8 +166,8 @@ async def main() -> None:
                             ):
                                 pass
             except Exception as e:
-                print(f"[ADK] Cycle {cycle} error: {type(e).__name__} — {str(e)[:100]}")
-                print("[ADK] Continuing to next cycle...")
+                print(f"[{_ts()}] [ADK] Cycle {cycle} error: {type(e).__name__} — {str(e)[:100]}")
+                print(f"[{_ts()}] [ADK] Continuing to next cycle...")
 
             open_incidents = store.get_open_incidents()
             for incident in open_incidents:

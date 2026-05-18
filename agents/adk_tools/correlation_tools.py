@@ -40,19 +40,15 @@ def correlate_alert(
     if _correlation is None:
         return {}
 
-    # Same-cycle duplicate guard: the ADK agent batches
-    # all route_alert() calls before correlate_alert(),
-    # so the store is empty when route_alert() runs for
-    # the 2nd same-device alert in a cycle. By the time
-    # the 2nd correlate_alert() runs, the 1st has already
-    # persisted — catch and redirect to append.
+    # Duplicate guard: if the LLM passes action="new" but an
+    # open incident already exists for this device, redirect
+    # to append. get_open_incidents() only returns OPEN
+    # incidents so there is no risk of merging resolved
+    # incidents. Age is irrelevant — one open incident per
+    # device is always the correct invariant.
     if action == "new":
-        _now = datetime.now(timezone.utc)
         for _inc in _correlation.store.get_open_incidents():
-            if (
-                _inc.root_cause_device == device
-                and (_now - _inc.created_at).total_seconds() < 60
-            ):
+            if _inc.root_cause_device == device:
                 action = "append"
                 incident_id = _inc.incident_id
                 break
