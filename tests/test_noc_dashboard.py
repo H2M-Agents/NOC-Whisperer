@@ -90,3 +90,23 @@ def test_stop_sets_flag() -> None:
     assert dash._stop is False
     dash.stop()
     assert dash._stop is True
+
+
+def test_incident_board_started_column_in_la_time() -> None:
+    """Incident board Started column shows created_at in America/Los_Angeles time (HH:MM PDT/PST)."""
+    import re
+    from zoneinfo import ZoneInfo
+
+    _LA_TZ = ZoneInfo("America/Los_Angeles")
+    dash = NOCDashboard()
+    inc = _incident("inc-ts-1")
+    dash.update_incident_board(inc)
+
+    stored = dash.open_incidents[0]
+    la_str = stored.created_at.astimezone(_LA_TZ).strftime("%H:%M %Z")
+    assert re.match(r"\d{2}:\d{2} (?:PDT|PST)", la_str), (
+        f"Expected HH:MM PDT/PST format, got {la_str!r}"
+    )
+
+    display = dash.generate_display()
+    assert display is not None

@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import time
-from datetime import timezone
+from datetime import datetime, timezone
 from typing import List
+from zoneinfo import ZoneInfo
 
 from rich.columns import Columns
 from rich.live import Live
@@ -12,6 +13,8 @@ from rich.panel import Panel
 from rich.table import Table
 
 from adapters.canonical_alert import CanonicalAlert, Incident
+
+_LA_TZ = ZoneInfo("America/Los_Angeles")
 
 
 class NOCDashboard:
@@ -69,6 +72,7 @@ class NOCDashboard:
         table = Table(show_header=True, header_style="bold yellow")
         table.add_column("ID")
         table.add_column("Root Cause")
+        table.add_column("Started")
         table.add_column("Affected")
         table.add_column("Conf")
         table.add_column("Status")
@@ -76,6 +80,7 @@ class NOCDashboard:
             table.add_row(
                 incident.incident_id[:8],
                 incident.root_cause_device,
+                incident.created_at.astimezone(_LA_TZ).strftime("%H:%M %Z"),
                 ",".join(incident.affected_services[:3]),
                 f"{incident.confidence:.2f}",
                 incident.status,
