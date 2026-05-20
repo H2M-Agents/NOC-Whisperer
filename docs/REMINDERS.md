@@ -66,8 +66,22 @@ morning is final for demo day Sun May 17.
   communications/communications_agent.py (if base wins)
 
 ## REMINDER-014 — Migrate Orchestration Loop To Google ADK
-**Status:** OPEN
-**Priority:** HIGH — before demo day May 24
+**Status:** RESOLVED — Sat May 17 2026
+**Completion note:** run_demo_adk.py working end-to-end.
+Full demo scenario confirmed: fault detection →
+correlation → preliminary advisory → confirmed advisory
+(confidence 0.90+ via DSPyCorrelator / gpt-oss-20b) →
+healing detection → SERVICE RESTORED advisory.
+Key fixes applied during ADK migration session:
+- Advisory state (preliminary/confirmed flags persisted)
+- Option C: device relabeling prevents ad/cart
+  incident contamination
+- Same-cycle duplicate guard in correlate_alert()
+- DSPyCorrelator wired via mode=production
+- Incident Board: Started column, closed-row removal
+- [Agent]/[ADK] log timestamps (HH:MM:SS PDT/PST)
+297 tests passing.
+**Priority:** HIGH — before demo day May 30 2026
 **Last updated:** Wed May 14 2026
 
 **What to keep (unchanged):**
@@ -111,13 +125,21 @@ morning is final for demo day Sun May 17.
   uv pip install google-adk
 
 **Estimated time:** 2-3 days
-**Target:** Before demo day May 24
+**Target:** Before demo day May 30 2026
 **Sequence:** Complete healing scenario first, then ADK migration
 **Reference:** Discussed May 13-14 2026
 
 ## REMINDER-015 — Fix Hardcoded Dates In Advisory Output
-**Status:** OPEN
-**Priority:** Medium — before demo day May 24
+**Status:** RESOLVED — Sat May 17 2026
+**Implementation note:** Fix used zoneinfo.ZoneInfo(
+"America/Los_Angeles") via _la_now_str() helper —
+NOT the timedelta(hours=-8) described in this reminder.
+DST-aware: PDT (UTC-7) in summer, PST (UTC-8) in winter.
+Also added _STALE_DATE_RE post-processing in generate()
+to scrub training-data dates from model output.
+Files changed: communications/communications_agent.py,
+tests/test_timezone_fix.py (21 new tests).
+**Priority:** Medium — before demo day May 30 2026
 **Last updated:** Sat May 17 2026
 
 **Problem:**
@@ -149,7 +171,7 @@ morning is final for demo day Sun May 17.
   communications/communications_agent.py
 
 **Estimated time:** 30 minutes
-**Target:** Before demo day May 24
+**Target:** Before demo day May 30 2026
 
 > Cursor: At the start of every session, check this file.
 > If any reminder is marked BLOCKING for the current session,
@@ -214,7 +236,7 @@ morning is final for demo day Sun May 17.
 
 **Note:** Demo runs with NOC_LIVE_MODE=true — synthetic noise
   path is not exercised during demo. Not relevant for demo day.
-  Defer to post-demo day May 24.
+  Defer to post-demo day May 30 2026.
 
 ## REMINDER-008 — Commit Pending Changes
 **Status:** RESOLVED — Thu May 14 2026
@@ -251,7 +273,7 @@ Working tree clean, branch up to date with origin/main.
   Target: Mon May 11 if time permits.
 
 **Note (Thu May 14 2026):** Deferred — healing scenario takes priority.
-  Target moved to post demo day May 24.
+  Target moved to post demo day May 30 2026.
 
 ## REMINDER-010 — Fix CommunicationsAgent RLVR Training Data
 **Status:** OPEN — multiple training attempts completed
@@ -519,6 +541,63 @@ Training scripts ran as background jobs without issue.
 **Target:** May 12 if time permits
 **Fallback:** Use docs/evaluation_results.md training metrics
              for presentation — these are real numbers
+
+---
+
+## REMINDER-016 — ADK ad Duplicate Incidents (Cosmetic)
+**Status:** OPEN — not a demo blocker
+**Priority:** Low — post-demo cleanup
+**Last updated:** Sat May 17 2026
+
+**Symptom:** Two or three ad incidents sometimes appear
+in the Incident Board instead of one. Occurs when the
+LLM passes action=new for device=ad even though an open
+ad incident exists, AND _upsert_sync has silently failed
+for that incident, removing it from get_open_incidents().
+The duplicate guard doesn't trigger because the existing
+incident is absent from the store query.
+
+**Impact:** Visual noise only. Both incidents are correctly
+labeled ad and do not contaminate the cart cascade story.
+Demo narrative remains coherent.
+
+**Fix (post-demo):** Investigate _upsert_sync reliability
+in correlation_tools.py. Consider replacing silent
+try/except with logged warning. Alternatively make
+IncidentStore._upsert_sync retry on failure.
+
+---
+
+## REMINDER-017 — preliminary_advisory_sent Gap
+**Status:** RESOLVED — Tue May 20 2026
+**Fix:** In generate_advisory(), when advisory_type=
+"confirmed" succeeds, also calls _mark_advisory_sent_sync
+(incident_id, "preliminary"). Subsequent preliminary checks
+return "already_sent:preliminary" — advisory panel stays
+on CONFIRMED. File: agents/adk_tools/communications_tools.py.
+2 new tests added. 299 tests passing.
+**Priority:** Low — post-demo cleanup
+**Last updated:** Tue May 20 2026
+
+**Symptom:** When DSPyCorrelator returns confidence > 0.85
+on first evaluation, the agent calls
+generate_advisory("confirmed") directly without first
+calling generate_advisory("preliminary"). This leaves
+preliminary_advisory_sent=False in the store. In
+subsequent cycles the agent fires a new preliminary
+advisory unnecessarily, overwriting the confirmed
+advisory in the NOC ADVISORY panel.
+
+**Impact:** Advisory panel shows PRELIMINARY after
+CONFIRMED in later cycles. SERVICE RESTORED advisory
+still fires correctly at healing. Demo story remains
+coherent.
+
+**Fix (post-demo):** In generate_advisory(), when
+advisory_type="confirmed" is successfully generated,
+also call store._mark_advisory_sent_sync(incident_id,
+"preliminary") to close the gap.
+File: agents/adk_tools/communications_tools.py.
 
 ---
 

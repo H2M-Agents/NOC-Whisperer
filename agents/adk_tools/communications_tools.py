@@ -58,6 +58,11 @@ def generate_advisory(incident_id: str, advisory_type: str) -> str:
         if advisory_type in ("preliminary", "confirmed"):
             try:
                 store._mark_advisory_sent_sync(incident_id, advisory_type)
+                # REMINDER-017: when confirmed fires, also mark preliminary
+                # so subsequent cycles cannot downgrade the advisory panel
+                # from CONFIRMED back to PRELIMINARY STATUS.
+                if advisory_type == "confirmed":
+                    store._mark_advisory_sent_sync(incident_id, "preliminary")
             except Exception:
                 pass
 

@@ -82,7 +82,11 @@ def test_generate_advisory_persists_confirmed_flag():
         ct, "_store", store
     ), patch.object(ct, "_dashboard", None):
         ct.generate_advisory("INC-001", "confirmed")
-    store._mark_advisory_sent_sync.assert_called_once_with("INC-001", "confirmed")
+    # Fix calls _mark_advisory_sent_sync twice:
+    # once for confirmed, once for preliminary (REMINDER-017)
+    assert store._mark_advisory_sent_sync.call_count == 2
+    store._mark_advisory_sent_sync.assert_any_call("INC-001", "confirmed")
+    store._mark_advisory_sent_sync.assert_any_call("INC-001", "preliminary")
 
 
 def test_generate_advisory_does_not_persist_resolution_flag():
@@ -129,3 +133,27 @@ def test_generate_advisory_updates_dashboard_on_success():
     ), patch.object(ct, "_dashboard", dashboard):
         ct.generate_advisory("INC-001", "preliminary")
     dashboard.update_advisory.assert_called_once()
+
+
+def test_generate_advisory_confirmed_also_marks_preliminary():
+    """REMINDER-017: confirmed advisory also marks preliminary so the panel cannot downgrade."""
+    store, _ = _make_store(preliminary_sent=False, confirmed_sent=False)
+    with patch.object(ct, "_communications", _make_comms()), patch.object(
+        ct, "_store", store
+    ), patch.object(ct, "_dashboard", None):
+        ct.generate_advisory("INC-001", "confirmed")
+
+    store._mark_advisory_sent_sync.assert_any_call("INC-001", "preliminary")
+    store._mark_advisory_sent_sync.assert_any_call("INC-001", "confirmed")
+    assert store._mark_advisory_sent_sync.call_count == 2
+
+
+def test_generate_advisory_preliminary_not_double_marked():
+    """Generating preliminary only marks preliminary once — double-mark is exclusive to confirmed."""
+    store, _ = _make_store(preliminary_sent=False, confirmed_sent=False)
+    with patch.object(ct, "_communications", _make_comms()), patch.object(
+        ct, "_store", store
+    ), patch.object(ct, "_dashboard", None):
+        ct.generate_advisory("INC-001", "preliminary")
+
+    store._mark_advisory_sent_sync.assert_called_once_with("INC-001", "preliminary")
