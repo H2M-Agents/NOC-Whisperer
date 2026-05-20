@@ -1,3 +1,12 @@
+> ⚠️ SUPERSEDED — May 30 2026
+> This outline was written for a 15-minute slot (Session 28,
+> May 12 2026). The active presentation for the May 30 demo
+> is the 10-minute 9-slide deck validated against the current
+> repo state. Key differences: 299 tests (not 211),
+> run_demo_adk.py (not run_demo.py), ADK loop has no
+> ReconcilerAgent, dedupe window removed.
+> See docs/DEMO_QA.md for current Q&A preparation.
+
 # NOC Whisperer — Presentation Outline (Hybrid VC + Technical Capstone)
 
 **Format:** 12 slides · **15 minutes** total (~75s/slide average; compress slides 1–2 and 12 for buffer)  

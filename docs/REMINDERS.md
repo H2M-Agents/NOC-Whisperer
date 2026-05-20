@@ -180,46 +180,58 @@ tests/test_timezone_fix.py (21 new tests).
 ---
 
 ## DEMO DAY RUNBOOK
-**This is the step-by-step sequence for demo day.**
 
 ### Pre-Demo Setup (T-5 minutes)
-  ssh bmammen@ada-vm-1
-  cd ~/projects/opentelemetry-demo
-  docker compose up -d
-  # llm container has restart:no in override file
-  # it will start once and stay stable
-  # no action needed for llm
-  docker compose ps | grep -v "Up" | grep -v "NAME"
-  # All containers must show Up
 
-### Verify Data Flowing (T-2 minutes)
-  curl -s "http://10.0.50.50:9090/api/v1/label/__name__/values" \
-    | python3 -m json.tool | grep "app_" | head -5
-  # Must show app_cart_* metrics
+    # On gho-vm-1
+    ssh bmammen@gho-vm-1
+    cd ~/projects/opentelemetry-demo
+    docker compose up -d
+    docker compose ps | grep -v "Up" | grep -v "NAME"
+    # All containers must show Up except 'ad' (known crash-loop)
+    docker start valkey-cart
+    # Verify Prometheus is receiving data
+    curl -s "http://localhost:9090/api/v1/label/__name__/values" \
+      | python3 -m json.tool | grep "app_cart" | head -3
 
 ### Start Demo (T=0)
-  # On Mac
-  .venv/bin/python3 scripts/run_demo.py
-  # Dashboard appears — all panels empty — this is correct
 
-### Inject Fault (T+30s)
-  # On ada-vm-1 in second terminal
-  docker stop valkey-cart
+    # On gho-gpu-vm
+    ssh bmammen@gho-gpu-vm
+    cd ~/projects/NOC-Whisperer
+    .venv/bin/python3 scripts/run_demo_adk.py
+    # Wait 2-3 cycles for baseline to stabilize
+    # Expect: 1 ad incident, confidence 0.90-0.95, no cart alerts
+
+### Inject Fault (after baseline is stable)
+
+    # On gho-vm-1 in second terminal
+    docker stop valkey-cart
 
 ### What To Expect
-  T+60s:  Prometheus detects valkey-cart failure
-  T+75s:  MCP tool polls — picks up alerts
-  T+90s:  Alerts appear in RAW ALERT STREAM panel
-  T+120s: Incident created in INCIDENT BOARD panel
-  T+150s: Advisory fires in NOC ADVISORY panel
+
+    T+60-90s:  cart_threshold_breach appears in RAW ALERT STREAM
+    T+90-120s: Separate cart incident created in INCIDENT BOARD
+               (Started column shows detection time)
+    T+120-180s: CONFIRMED NOC ADVISORY fires (confidence > 0.85)
+               Advisory stays stable — does not downgrade
+
+### Restore / Healing
+
+    # On gho-vm-1
+    docker start valkey-cart
+    # Wait 1-2 cycles for cart latency to drop
+    # Expect: cart incident disappears from INCIDENT BOARD
+    # Expect: SERVICE RESTORED NOC ADVISORY fires
 
 ### Stop Demo
-  Ctrl+C on Mac terminal
-  Summary prints automatically
+
+    Ctrl+C on gho-gpu-vm terminal
 
 ### Restore After Demo
-  docker start valkey-cart
-  # Wait 60 seconds for services to reconnect
+
+    # On gho-vm-1
+    docker start valkey-cart
 
 ---
 
