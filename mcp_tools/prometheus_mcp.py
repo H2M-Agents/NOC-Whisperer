@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List
@@ -11,60 +10,6 @@ import requests
 import yaml
 
 from adapters.canonical_alert import CanonicalAlert
-
-
-def _load_window_config() -> tuple[int, int]:
-    """Load PromQL window config with three-level
-    priority: env var > yaml > hardcoded default.
-    Always returns (int, int). Never raises.
-    Hardcoded fallback: (5, 5).
-    """
-    _yaml_detection: int = 5
-    _yaml_health: int = 5
-
-    try:
-        with open("config/prometheus_config.yaml",
-                  "r", encoding="utf-8") as f:
-            loaded = yaml.safe_load(f) or {}
-            if isinstance(loaded, dict):
-                try:
-                    _yaml_detection = int(
-                        loaded.get(
-                            "detection_window_minutes",
-                            5
-                        )
-                    )
-                except (ValueError, TypeError):
-                    _yaml_detection = 5
-                try:
-                    _yaml_health = int(
-                        loaded.get(
-                            "health_window_minutes",
-                            5
-                        )
-                    )
-                except (ValueError, TypeError):
-                    _yaml_health = 5
-    except Exception:
-        pass
-
-    try:
-        detection = int(os.getenv(
-            "DETECTION_WINDOW_MINUTES",
-            _yaml_detection
-        ))
-    except (ValueError, TypeError):
-        detection = _yaml_detection
-
-    try:
-        health = int(os.getenv(
-            "HEALTH_WINDOW_MINUTES",
-            _yaml_health
-        ))
-    except (ValueError, TypeError):
-        health = _yaml_health
-
-    return detection, health
 
 
 class PrometheusMCP:
@@ -83,32 +28,22 @@ class PrometheusMCP:
         except Exception:
             self.thresholds = {}
 
-    def _build_breach_queries(self,
-                          window: str
-                          ) -> list[str]:
-        """Build rate-based breach queries with the
-        given PromQL window string e.g. '5m', '1m'.
-        The up{job=~...} query is windowless and
-        included unchanged.
-        """
-        return [
-            f'rate(app_cart_add_item_latency_seconds_sum[{window}])'
-            f' / rate(app_cart_add_item_latency_seconds_count[{window}])'
-            f' > 0.1',
-            f'rate(app_cart_get_cart_latency_seconds_sum[{window}])'
-            f' / rate(app_cart_get_cart_latency_seconds_count[{window}])'
-            f' > 0.1',
-            f'rate(app_frontend_requests_total{{status=~"5.."}}[{window}])'
-            f' > 0.005',
-            'up{job=~"opentelemetry-demo/.*"} == 0',
-        ]
-
     def get_threshold_breaches(self) -> List[CanonicalAlert]:
         """Fetch Prometheus threshold breaches as canonical alerts."""
-        detection_w, _ = _load_window_config()
-        queries = self._build_breach_queries(
-            f"{detection_w}m"
-        )
+        queries = [
+            # Cart latency spike — fires when > 1s (750x normal)
+            # Normal is ~0.001s, only fires when valkey-cart is down
+            'rate(app_cart_add_item_latency_seconds_sum[5m])'
+            ' / rate(app_cart_add_item_latency_seconds_count[5m]) > 0.1',
+            # Cart get latency spike
+            'rate(app_cart_get_cart_latency_seconds_sum[5m])'
+            ' / rate(app_cart_get_cart_latency_seconds_count[5m]) > 0.1',
+            # Frontend 5xx errors — only fires on server errors
+            # status label available in app_frontend_requests_total
+            'rate(app_frontend_requests_total{status=~"5.."}[5m]) > 0.005',
+            # Any OTel service completely down
+            'up{job=~"opentelemetry-demo/.*"} == 0',
+        ]
 
         alerts: List[CanonicalAlert] = []
         for promql in queries:
@@ -133,19 +68,21 @@ class PrometheusMCP:
 
         Uses 5m lookback window for recovery detection
         after service restoration. Independent of
-        get_threshold_breaches() — no shared state. Query templates shared
-        via _build_breach_queries() but each method
-        uses its own window config.
+        get_threshold_breaches() — no shared state or queries.
         Returns True (healthy) on any query failure (fail open).
 
         Args:
             device: device name as returned by _to_canonical()
                 e.g. 'cart', 'frontend'
         """
-        _, health_w = _load_window_config()
-        queries = self._build_breach_queries(
-            f"{health_w}m"
-        )
+        queries = [
+            "rate(app_cart_add_item_latency_seconds_sum[5m])"
+            " / rate(app_cart_add_item_latency_seconds_count[5m]) > 0.1",
+            "rate(app_cart_get_cart_latency_seconds_sum[5m])"
+            " / rate(app_cart_get_cart_latency_seconds_count[5m]) > 0.1",
+            'rate(app_frontend_requests_total{status=~"5.."}[5m]) > 0.005',
+            'up{job=~"opentelemetry-demo/.*"} == 0',
+        ]
         try:
             for promql in queries:
                 response = self.query(promql)
