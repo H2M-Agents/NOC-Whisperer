@@ -1,0 +1,13 @@
+# PromQL sliding window for rate queries.
+# Controls detection latency vs noise tradeoff.
+# Lower = faster detection, higher = more stable.
+#
+# Override at runtime via environment variables
+# or .env file in project root:
+#   DETECTION_WINDOW_MINUTES=1
+#   HEALTH_WINDOW_MINUTES=1
+#
+# Priority: env var > this file > hardcoded 5
+
+detection_window_minutes: 5
+health_window_minutes: 5
