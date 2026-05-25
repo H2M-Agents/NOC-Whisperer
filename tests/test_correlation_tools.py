@@ -261,10 +261,180 @@ def test_different_device_not_redirected():
 
 
 def test_existing_append_not_affected_by_guard():
-    """action=append bypasses the duplicate guard entirely."""
+    """action=append with a valid incident_id
+    that exists in the store skips the dedup
+    scan — explicit id is preserved."""
     existing = _make_open_incident("cart", age_seconds=5)
+    explicit = MagicMock()
+    explicit.root_cause_device = "cart"
+    explicit.incident_id = "INC-EXPLICIT-999"
+    explicit.created_at = datetime.now(timezone.utc) - timedelta(seconds=5)
+    explicit.preliminary_advisory_sent = False
+    explicit.confirmed_advisory_sent = False
+    mock_correlation = _make_mock_correlation(_make_mock_incident())
+    mock_correlation.store.get_open_incidents.return_value = [
+        existing,
+        explicit,
+    ]
+
+    captured = {}
+
+    def capture(decision):
+        captured["action"] = decision.action
+        captured["incident_id"] = decision.incident_id
+        return _make_mock_incident()
+
+    mock_correlation.correlate.side_effect = capture
+
+    with patch(
+        "agents.adk_tools.correlation_tools._correlation",
+        mock_correlation,
+    ):
+        correlate_alert(
+            **{
+                **_CORRELATE_KWARGS,
+                "device": "cart",
+                "action": "append",
+                "incident_id": "INC-EXPLICIT-999",
+            }
+        )
+
+    assert captured["action"] == "append"
+    assert captured["incident_id"] == "INC-EXPLICIT-999"
+
+
+def test_append_invalid_id_resolves_by_device():
+    """append + invalid id resolves to the
+    existing open incident for that device."""
+    existing = MagicMock()
+    existing.root_cause_device = "cart"
+    existing.incident_id = "INC-CART-001"
+    existing.created_at = datetime.now(timezone.utc) - timedelta(seconds=5)
+    existing.preliminary_advisory_sent = False
+    existing.confirmed_advisory_sent = False
     mock_correlation = _make_mock_correlation(_make_mock_incident())
     mock_correlation.store.get_open_incidents.return_value = [existing]
+
+    captured = {}
+
+    def capture(decision):
+        captured["action"] = decision.action
+        captured["incident_id"] = decision.incident_id
+        return _make_mock_incident()
+
+    mock_correlation.correlate.side_effect = capture
+
+    with patch(
+        "agents.adk_tools.correlation_tools._correlation",
+        mock_correlation,
+    ):
+        correlate_alert(
+            **{
+                **_CORRELATE_KWARGS,
+                "device": "cart",
+                "action": "append",
+                "incident_id": "INVALID-UUID-NOT-IN-STORE",
+            }
+        )
+
+    assert captured["action"] == "append"
+    assert captured["incident_id"] == "INC-CART-001"
+
+
+def test_new_cart_alert_matches_valkey_cart_root():
+    """action=new with alert device=cart
+    appends to open valkey-cart incident
+    via _INFRA_PAIRS match."""
+    existing = MagicMock()
+    existing.root_cause_device = "valkey-cart"
+    existing.incident_id = "INC-VALKEY-001"
+    existing.created_at = datetime.now(timezone.utc) - timedelta(seconds=5)
+    existing.preliminary_advisory_sent = False
+    existing.confirmed_advisory_sent = False
+    mock_correlation = _make_mock_correlation(_make_mock_incident())
+    mock_correlation.store.get_open_incidents.return_value = [existing]
+
+    captured = {}
+
+    def capture(decision):
+        captured["action"] = decision.action
+        captured["incident_id"] = decision.incident_id
+        return _make_mock_incident()
+
+    mock_correlation.correlate.side_effect = capture
+
+    with patch(
+        "agents.adk_tools.correlation_tools._correlation",
+        mock_correlation,
+    ):
+        correlate_alert(
+            **{
+                **_CORRELATE_KWARGS,
+                "device": "cart",
+                "action": "new",
+                "incident_id": None,
+            }
+        )
+
+    assert captured["action"] == "append"
+    assert captured["incident_id"] == "INC-VALKEY-001"
+
+
+def test_cart_alert_does_not_merge_frontend_incident():
+    """cart alert must not merge into an open
+    frontend incident — topology isolation
+    preserved for ad/frontend noise."""
+    existing = MagicMock()
+    existing.root_cause_device = "frontend"
+    existing.incident_id = "INC-FRONTEND-001"
+    existing.created_at = datetime.now(timezone.utc) - timedelta(seconds=5)
+    existing.preliminary_advisory_sent = False
+    existing.confirmed_advisory_sent = False
+    mock_correlation = _make_mock_correlation(_make_mock_incident())
+    mock_correlation.store.get_open_incidents.return_value = [existing]
+
+    captured = {}
+
+    def capture(decision):
+        captured["action"] = decision.action
+        captured["incident_id"] = decision.incident_id
+        return _make_mock_incident()
+
+    mock_correlation.correlate.side_effect = capture
+
+    with patch(
+        "agents.adk_tools.correlation_tools._correlation",
+        mock_correlation,
+    ):
+        correlate_alert(
+            **{
+                **_CORRELATE_KWARGS,
+                "device": "cart",
+                "action": "new",
+                "incident_id": None,
+            }
+        )
+
+    assert captured["action"] == "new"
+    assert captured["incident_id"] != "INC-FRONTEND-001"
+
+
+def test_append_valid_id_kept_when_in_store():
+    """append with valid explicit id is kept
+    even when another matching incident exists
+    first in the open list."""
+    first = _make_open_incident("cart", age_seconds=5)
+    second = MagicMock()
+    second.root_cause_device = "cart"
+    second.incident_id = "INC-EXPLICIT-999"
+    second.created_at = datetime.now(timezone.utc) - timedelta(seconds=5)
+    second.preliminary_advisory_sent = False
+    second.confirmed_advisory_sent = False
+    mock_correlation = _make_mock_correlation(_make_mock_incident())
+    mock_correlation.store.get_open_incidents.return_value = [
+        first,
+        second,
+    ]
 
     captured = {}
 

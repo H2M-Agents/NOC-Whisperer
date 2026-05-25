@@ -6,6 +6,33 @@ from typing import Any
 from adapters.canonical_alert import CanonicalAlert, TriageDecision
 from agents.correlation_agent import CorrelationAgent
 
+import logging as _log
+
+_logger = _log.getLogger(__name__)
+
+_INFRA_PAIRS: frozenset[frozenset[str]] = frozenset({
+    frozenset({"cart", "valkey-cart"}),
+})
+
+
+def _devices_match(
+    alert_device: str,
+    stored_root_cause: str,
+) -> bool:
+    """True when alert device and stored
+    root_cause_device are the same node or
+    a known infrastructure alias pair.
+    Intentionally narrow — does not use full
+    topology are_related() to avoid merging
+    cart alerts into frontend/ad noise incidents.
+    """
+    return (
+        alert_device == stored_root_cause
+        or frozenset({alert_device, stored_root_cause})
+        in _INFRA_PAIRS
+    )
+
+
 _correlation: CorrelationAgent | None = None
 
 
@@ -44,15 +71,36 @@ def correlate_alert(
     if _correlation is None:
         return {}
 
-    # Duplicate guard: if the LLM passes action="new" but an
-    # open incident already exists for this device, redirect
-    # to append. get_open_incidents() only returns OPEN
-    # incidents so there is no risk of merging resolved
-    # incidents. Age is irrelevant — one open incident per
-    # device is always the correct invariant.
-    if action == "new":
-        for _inc in _correlation.store.get_open_incidents():
-            if _inc.root_cause_device == device:
+    # Always-run dedup guard.
+    # Runs before TriageDecision regardless of
+    # LLM action value.
+    #
+    # Priority:
+    #   1. action=append + valid id in store
+    #      → keep as-is (legitimate append)
+    #   2. action=append + id missing/invalid
+    #      → resolve by device match
+    #   3. action=new + matching open incident
+    #      → redirect to append
+    #
+    # _open cached once to avoid double DB read.
+    _open = _correlation.store.get_open_incidents()
+
+    _valid_id_in_store = (
+        action == "append"
+        and incident_id is not None
+        and any(
+            _inc.incident_id == incident_id
+            for _inc in _open
+        )
+    )
+
+    if not _valid_id_in_store:
+        for _inc in _open:
+            if _devices_match(
+                device,
+                _inc.root_cause_device,
+            ):
                 action = "append"
                 incident_id = _inc.incident_id
                 break
@@ -79,8 +127,13 @@ def correlate_alert(
     incident = _correlation.correlate(decision)
     try:
         _correlation.store._upsert_sync(incident)
-    except Exception:
-        pass
+    except Exception as _upsert_err:
+        _logger.warning(
+            "correlate_alert: upsert failed "
+            "for incident %s: %s",
+            incident.incident_id,
+            _upsert_err,
+        )
     return {
         "incident_id": incident.incident_id,
         "root_cause_device": incident.root_cause_device,
