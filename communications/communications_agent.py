@@ -112,8 +112,20 @@ class CommunicationsAgent:
                 clean_lines.append(line)
                 if stripped:
                     seen_lines.add(stripped)
-            out = "\n".join(clean_lines).strip()
-            return out if out else "[inference: empty decode]"
+            capped_lines: list[str] = []
+            action_required_seen = 0
+            for line in clean_lines:
+                capped_lines.append(line)
+                if "ACTION REQUIRED" in \
+                        line.upper():
+                    action_required_seen += 1
+                    if action_required_seen >= 2:
+                        break
+            if len(capped_lines) > 12:
+                capped_lines = capped_lines[:12]
+            out = "\n".join(capped_lines).strip()
+            return out if out else \
+                "[inference: empty decode]"
         except Exception as e:
             return f"[inference error: {e}]"
 
@@ -152,8 +164,12 @@ class CommunicationsAgent:
         if kind == "confirmed":
             return (
                 f"{header}"
-                "Task: Write a CONFIRMED NOC advisory. Use imperative ACTION REQUIRED lines. "
-                "State impact and remediation as firm facts (confirmed), not speculation.\n"
+                "Task: Write a CONFIRMED NOC advisory "
+                "in at most 10 lines total. "
+                "Include exactly one imperative "
+                "ACTION REQUIRED line. "
+                "State impact and remediation as firm "
+                "facts (confirmed), not speculation.\n"
             )
         if kind == "resolution":
             return (
