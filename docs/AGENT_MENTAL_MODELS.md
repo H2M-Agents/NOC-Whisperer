@@ -43,17 +43,17 @@ The three dashboard panels are updated through a shared in-process `NOCDashboard
 
 ```mermaid
 flowchart TD
-  RA[Raw alert fields<br/>(device, metric, value, message, threshold)] --> NA[normalize_alert tool]
+  RA[Raw alert fields<br>(device, metric, value, message, threshold)] --> NA[normalize_alert tool]
   NA --> BCA[Build raw_payload dict + source_system]
   BCA --> NP[NormalizerAgent.process()]
   NP -->|first call| LM[Lazy-load LoRA adapter if present]
-  LM --> INF{LoRA available<br/>and inference parses?}
+  LM --> INF{LoRA available<br>and inference parses?}
   NP --> INF
-  INF -->|yes| LLM[Local Qwen+LoRA inference<br/>domain/severity (+confidence)]
-  INF -->|no| RB[Rule-based fallback<br/>domain/severity]
+  INF -->|yes| LLM[Local Qwen+LoRA inference<br>domain/severity (+confidence)]
+  INF -->|no| RB[Rule-based fallback<br>domain/severity]
   LLM --> CA[CanonicalAlert]
   RB --> CA
-  CA --> DAS[Dashboard.update_alert_stream<br/>(RAW ALERT STREAM)]
+  CA --> DAS[Dashboard.update_alert_stream<br>(RAW ALERT STREAM)]
   CA --> OUT[Return CanonicalAlert.to_dict()]
 ```
 
@@ -95,13 +95,13 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-  CAIN[Canonical alert fields<br/>(device, domain, severity, metric, value, confidence)] --> RA[route_alert tool]
+  CAIN[Canonical alert fields<br>(device, domain, severity, metric, value, confidence)] --> RA[route_alert tool]
   RA --> B[Build CanonicalAlert with now timestamp]
   B --> T[TriageAgent.route()]
   T --> O[Load open incidents from IncidentStore]
-  O --> M{Any incident matches?<br/>time<=300s AND topology related}
-  M -->|yes| AP[action=append<br/>incident_id=matched]
-  M -->|no| NW[action=new<br/>incident_id=None]
+  O --> M{Any incident matches?<br>time<=300s AND topology related}
+  M -->|yes| AP[action=append<br>incident_id=matched]
+  M -->|no| NW[action=new<br>incident_id=None]
   AP --> OUT[Return TriageDecision.to_dict()]
   NW --> OUT
 ```
@@ -144,19 +144,19 @@ An open incident is a match when BOTH are true:
 
 ```mermaid
 flowchart TD
-  TDIN[TriageDecision fields<br/>(action, incident_id, alert fields)] --> CT[correlate_alert tool]
-  CT --> GUARD[Always-run dedup guard<br/>valid id kept; else match cart↔valkey-cart]
+  TDIN[TriageDecision fields<br>(action, incident_id, alert fields)] --> CT[correlate_alert tool]
+  CT --> GUARD[Always-run dedup guard<br>valid id kept; else match cart↔valkey-cart]
   GUARD --> D[Build TriageDecision]
   D --> C[CorrelationAgent.correlate()]
   C --> PR[Prune sliding buffer (180s)]
   PR --> EX{append + incident_id found in store?}
   EX -->|yes| CL1[Cluster = existing.alerts + new alert]
-  EX -->|no| CL2[Cluster = buffer + new alert<br/>(or existing missing -> new UUID)]
+  EX -->|no| CL2[Cluster = buffer + new alert<br>(or existing missing -> new UUID)]
   CL1 --> TOP[TopologyMCP.get_topology_context(devices)]
   CL2 --> TOP
-  TOP --> DSPy[DSPyCorrelator.predict()<br/>(compiled program if available)]
+  TOP --> DSPy[DSPyCorrelator.predict()<br>(compiled program if available)]
   DSPy -->|failure| BASE[BaselineCorrelator.predict()]
-  DSPy --> INC[Build Incident<br/>(root cause, affected, confidence, action)]
+  DSPy --> INC[Build Incident<br>(root cause, affected, confidence, action)]
   BASE --> INC
   INC --> UPS[IncidentStore._upsert_sync()]
   UPS -->|exception| LOG[Log warning]
@@ -214,20 +214,20 @@ For the May 30 demo, this guard is the “last line of defense” against incide
 ```mermaid
 flowchart TD
   INCIN[Incident + advisory_type] --> GA[generate_advisory tool]
-  GA --> GUARD[Guard: already_sent flags<br/>preliminary/confirmed]
+  GA --> GUARD[Guard: already_sent flags<br>preliminary/confirmed]
   GUARD -->|already sent| AS[Return already_sent:*]
   GUARD -->|not sent| GEN[CommunicationsAgent.generate()]
   GEN --> LOAD{First call?}
-  LOAD -->|yes| LM[Lazy-load LoRA adapter if present<br/>(else Ollama)]
+  LOAD -->|yes| LM[Lazy-load LoRA adapter if present<br>(else Ollama)]
   LOAD -->|no| PROMPT[_format_prompt(incident, type)]
   LM --> PROMPT
   PROMPT --> INF{Backend == LoRA?}
-  INF -->|yes| LOC[_infer_local()<br/>decode + dedup + caps]
+  INF -->|yes| LOC[_infer_local()<br>decode + dedup + caps]
   INF -->|no| OLL[_infer_ollama()]
   LOC --> POST[Scrub stale dates + finalize]
   OLL --> POST
   POST --> FLAG[Persist advisory_sent flag(s)]
-  FLAG --> DASH[Dashboard.update_advisory<br/>(NOC ADVISORY)]
+  FLAG --> DASH[Dashboard.update_advisory<br>(NOC ADVISORY)]
   DASH --> OUT[Return advisory text]
 ```
 
