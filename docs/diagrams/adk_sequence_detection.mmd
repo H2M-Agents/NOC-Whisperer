@@ -1,0 +1,50 @@
+sequenceDiagram
+    participant Run as run_demo_adk
+    participant ADK as ADK Runner
+    participant LLM as Orchestrator LLM
+    participant Prom as Prometheus MCP
+    participant Norm as NormalizerAgent
+    participant Triage as TriageAgent
+    participant Corr as CorrelationAgent
+    participant Comm as CommunicationsAgent
+    participant Store as IncidentStore
+    participant Dash as NOCDashboard
+
+    Run->>ADK: create session and send monitor message
+    ADK->>LLM: NOC instruction plus user message
+
+    Note over LLM,Prom: STEP 1 detect breaches
+    LLM->>Prom: get_active_alerts
+    Prom-->>LLM: alert dict list or empty
+
+    alt alerts returned
+        loop each alert in list
+            Note over LLM,Norm: STEP 2 normalize
+            LLM->>Norm: normalize_alert device metric value source
+            Norm-->>LLM: CanonicalAlert dict
+            Norm->>Dash: update alert stream
+
+            Note over LLM,Triage: STEP 3 route
+            LLM->>Triage: route_alert normalized fields
+            Triage->>Store: get_open_incidents
+            Store-->>Triage: open incident list
+            Triage-->>LLM: action new or append and incident_id
+
+            Note over LLM,Corr: STEP 4 correlate
+            LLM->>Corr: correlate_alert all fields
+            Corr->>Store: dedup guard reads open incidents
+            Corr->>Corr: DSPy correlate cluster
+            Corr->>Store: upsert incident
+            Corr-->>LLM: incident summary dict
+
+            Note over LLM,Comm: STEP 5 advisories
+            opt confidence high and alert count at least 2
+                LLM->>Comm: generate_advisory confirmed or preliminary
+                Comm->>Store: load incident and mark sent flags
+                Comm->>Dash: update advisory panel
+                Comm-->>LLM: advisory text
+            end
+        end
+    else no alerts
+        Note over LLM: skip steps 2 through 5 go to step 6
+    end

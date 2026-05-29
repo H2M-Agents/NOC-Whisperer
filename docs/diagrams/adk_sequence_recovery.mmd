@@ -1,0 +1,41 @@
+sequenceDiagram
+    participant Run as run_demo_adk
+    participant ADK as ADK Runner
+    participant LLM as Orchestrator LLM
+    participant Prom as Prometheus MCP
+    participant Comm as CommunicationsAgent
+    participant Store as IncidentStore
+    participant Dash as NOCDashboard
+
+    Note over Run,ADK: continues same cycle after diagram 1
+
+    Run->>ADK: session still active
+    ADK->>LLM: continue step 6
+
+    Note over LLM,Prom: STEP 6 health and close
+    LLM->>Store: check_open_incidents
+    Store-->>LLM: open incident list
+
+    alt open incidents exist
+        loop each open incident
+            LLM->>Prom: check_service_health root_cause_device
+            Prom-->>LLM: healthy true or false
+            opt device healthy
+                LLM->>Store: close_incident
+                Store-->>LLM: status resolved
+                LLM->>Comm: generate_advisory resolution
+                Comm->>Store: load incident
+                Comm->>Dash: update advisory panel
+                Comm-->>LLM: resolution text
+            end
+        end
+    else no open incidents
+        Note over LLM: nothing to health check
+    end
+
+    Note over Run,Dash: post cycle refresh every 15 seconds
+    Run->>Store: get_open_incidents
+    Store-->>Run: open incident list
+    Run->>Dash: refresh incident board
+    Run->>Dash: render three panels
+    Run->>Run: sleep 15 seconds and start next cycle

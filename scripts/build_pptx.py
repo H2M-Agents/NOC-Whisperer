@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the NOC Whisperer capstone PowerPoint deck (May 30, 2026) — 13 slides."""
+"""Build the NOC Whisperer capstone PowerPoint deck (May 30, 2026) — 14 slides."""
 
 from __future__ import annotations
 
@@ -13,7 +13,8 @@ from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
 from pptx.util import Inches, Pt
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-OUTPUT_PATH = PROJECT_ROOT / "docs" / "NOC_Whisperer_Capstone.pptx"
+OUTPUT_PATH = PROJECT_ROOT / "docs" / "NOC_Whisperer_Capstone_v2.pptx"
+AGENTIC_LOOP_PNG = PROJECT_ROOT / "dashboard" / "agentic_loop.png"
 
 SLIDE_W = Inches(13.333)
 SLIDE_H = Inches(7.5)
@@ -720,21 +721,13 @@ def build_slide_5_tool_stack(prs: Presentation) -> None:
     p.font.color.rgb = rgb(TEXT_PRIMARY)
 
     add_rounded_rect(slide, Inches(0.5), panel_y, panel_w, panel_h, fill_hex=BG_CARD)
-    add_textbox(
-        slide, Inches(0.65), panel_y + Inches(0.52), panel_w, Inches(0.3),
-        "(agents/adk_tools/)", font_size=12, color_hex=TEXT_MUTED,
-    )
-    add_textbox(
-        slide, Inches(0.65), panel_y + Inches(0.85), panel_w, Inches(0.35),
-        "What the LLM agent sees and calls:", font_size=13, italic=True, color_hex=TEXT_MUTED,
-    )
     tools = [
         ("get_active_alerts()", "normalize_alert()"),
         ("route_alert()", "correlate_alert()"),
         ("generate_advisory()", "check_open_incidents()"),
         ("check_service_health()", "close_incident()"),
     ]
-    gy = panel_y + Inches(1.25)
+    gy = panel_y + Inches(0.65)
     for i, (a, b) in enumerate(tools):
         y = gy + i * Inches(0.55)
         add_textbox(slide, Inches(0.65), y, Inches(2.6), Inches(0.5), a, font_size=13,
@@ -759,19 +752,15 @@ def build_slide_5_tool_stack(prs: Presentation) -> None:
     p2.font.color.rgb = rgb(TEXT_PRIMARY)
 
     add_rounded_rect(slide, rx, panel_y, panel_w, panel_h, fill_hex=BG_CARD)
-    add_textbox(slide, rx + Inches(0.15), panel_y + Inches(0.52), panel_w, Inches(0.3),
-                "(mcp_tools/)", font_size=12, color_hex=TEXT_MUTED)
-    add_textbox(slide, rx + Inches(0.15), panel_y + Inches(0.85), panel_w, Inches(0.35),
-                "Handle infrastructure directly:", font_size=13, italic=True, color_hex=TEXT_MUTED)
 
     mcps = [
-        ("PrometheusMCP", "Prometheus HTTP API (10.0.50.60:9090)"),
+        ("PrometheusMCP", "Prometheus HTTP API"),
         ("JaegerMCP", "Jaeger trace API"),
         ("TopologyMCP", "otel_demo_graph.json"),
         ("NodeExporterMCP", "Node Exporter metrics"),
     ]
     for i, (cls, target) in enumerate(mcps):
-        y = panel_y + Inches(1.35) + i * Inches(0.72)
+        y = panel_y + Inches(0.75) + i * Inches(0.72)
         add_textbox(slide, rx + Inches(0.15), y, Inches(2.0), Inches(0.4), cls,
                     font_size=13, color_hex=MCP_ORANGE, font_name="Consolas")
         add_textbox(slide, rx + Inches(2.1), y, Inches(0.25), Inches(0.4), "→",
@@ -786,15 +775,50 @@ def build_slide_5_tool_stack(prs: Presentation) -> None:
     )
 
 
-def _step_card(slide, left, top, num: str, title: str, body: str) -> None:
+def _step_card(
+    slide,
+    left,
+    top,
+    num: str,
+    title: str,
+    body: str,
+    *,
+    width=Inches(4.0),
+    height=Inches(1.35),
+) -> None:
     """Numbered step card."""
-    add_rounded_rect(slide, left, top, Inches(5.8), Inches(1.25), fill_hex=BG_CARD)
-    add_textbox(slide, left + Inches(0.12), top + Inches(0.06), Inches(0.45), Inches(0.4),
-                num, font_size=20, bold=True, color_hex=LLM_BLUE)
-    add_textbox(slide, left + Inches(0.5), top + Inches(0.06), Inches(5.1), Inches(0.38),
-                title, font_size=14, bold=True, font_name="Consolas")
-    add_textbox(slide, left + Inches(0.5), top + Inches(0.46), Inches(5.1), Inches(0.72),
-                body, font_size=13, color_hex=TEXT_MUTED)
+    add_rounded_rect(slide, left, top, width, height, fill_hex=BG_CARD)
+    add_textbox(
+        slide,
+        left + Inches(0.1),
+        top + Inches(0.05),
+        Inches(0.4),
+        Inches(0.35),
+        num,
+        font_size=20,
+        bold=True,
+        color_hex=LLM_BLUE,
+    )
+    add_textbox(
+        slide,
+        left + Inches(0.45),
+        top + Inches(0.05),
+        width - Inches(0.55),
+        Inches(0.35),
+        title,
+        font_size=14,
+        bold=True,
+        font_name="Consolas",
+    )
+    add_textbox(
+        slide,
+        left + Inches(0.45),
+        top + Inches(0.42),
+        width - Inches(0.55),
+        height - Inches(0.48),
+        body,
+        font_size=13,
+    )
 
 
 def build_slide_6_how_it_works(prs: Presentation) -> None:
@@ -802,19 +826,20 @@ def build_slide_6_how_it_works(prs: Presentation) -> None:
     slide = blank_slide(prs)
     add_slide_title(slide, "From Raw Alert to NOC Advisory — 6 Steps")
 
-    c1, c2 = Inches(0.5), Inches(6.9)
-    ys = [Inches(1.35), Inches(2.75), Inches(4.15)]
+    cw, ch = Inches(4.0), Inches(1.35)
+    c1, c2 = Inches(0.45), Inches(6.85)
+    ys = [Inches(1.35), Inches(2.85), Inches(4.35)]
     steps = [
-        ("①", "get_active_alerts()", "Pull threshold breaches from Prometheus MCP"),
+        ("①", "get_active_alerts()", "Pull threshold breaches from\nPrometheus MCP"),
         ("②", "normalize_alert()", "Raw metric → canonical CanonicalAlert"),
-        ("③", "route_alert()", "Rule-based topology + temporal proximity →\nnew incident or append to existing"),
-        ("④", "correlate_alert()", "DSPy LLM reasons over alert cluster +\ntopology → root cause + confidence"),
+        ("③", "route_alert()", "Rule-based topology + temporal\nproximity → new or append"),
+        ("④", "correlate_alert()", "DSPy LLM reasons over alert cluster\n+ topology → root cause + confidence"),
         ("⑤", "generate_advisory()", "Fine-tuned model writes NOC advisory\n(preliminary → confirmed → resolution)"),
         ("⑥", "check_service_health()", "Prometheus confirms recovery →\nclose_incident() → SERVICE RESTORED"),
     ]
     positions = [(c1, ys[0]), (c2, ys[0]), (c1, ys[1]), (c2, ys[1]), (c1, ys[2]), (c2, ys[2])]
     for (num, title, body), (left, top) in zip(steps, positions):
-        _step_card(slide, left, top, num, title, body)
+        _step_card(slide, left, top, num, title, body, width=cw, height=ch)
 
     strip = add_rounded_rect(slide, Inches(0.4), Inches(6.7), Inches(12.5), Inches(0.45), fill_hex=BG_CARD)
     no_border(strip)
@@ -842,7 +867,7 @@ def build_slide_7_models(prs: Presentation) -> None:
     headers = ["Agent", "Training", "Loss", "Accuracy", "Notes"]
     data = [
         ["NormalizerAgent", "SFT 200 ex.", "0.541", "80.9%", ""],
-        ["CommunicationsAgent", "SFT 80 ex.+RLVR", "0.250", "94.2%", ""],
+        ["CommunicationsAgent", "SFT 80+RLVR", "0.250", "94.2%", ""],
         ["CorrelationAgent", "DSPy optimized", "—", "96.7%*", ""],
     ]
     widths = [Inches(2.8), Inches(2.4), Inches(1.2), Inches(1.4), Inches(4.6)]
@@ -871,11 +896,16 @@ def build_slide_7_models(prs: Presentation) -> None:
                 para.font.color.rgb = rgb(TEXT_PRIMARY)
 
     add_textbox(
-        slide, Inches(0.45), Inches(3.0), Inches(12.4), Inches(0.85),
-        "* Rule-based baseline scored 100% on same eval set.\n"
-        "LLM advantage: confidence calibration + advisory generation.\n"
-        "Advisory: LoRA when present; Ollama qwen3:8b fallback",
-        font_size=11, italic=True, color_hex=TEXT_MUTED,
+        slide,
+        Inches(0.45),
+        Inches(3.0),
+        Inches(12.4),
+        Inches(0.85),
+        "* Rule-based baseline 100% same eval. LLM advantage: confidence\n"
+        "calibration + advisory generation.",
+        font_size=11,
+        italic=True,
+        color_hex=TEXT_MUTED,
     )
 
     disc = add_rounded_rect(
@@ -888,9 +918,9 @@ def build_slide_7_models(prs: Presentation) -> None:
     tf.margin_top = Inches(0.12)
     lines = [
         ("⚠  DISCOVERY: Reward Hacking in Communications RLVR", True, GOLD, 14),
-        ("Symptom:     Model repeated boilerplate to harvest reward scores", False, TEXT_PRIMARY, 13),
-        ("Root cause:  No repetition penalty in reward function", False, TEXT_PRIMARY, 13),
-        ("Fix:         advisory_reward() applies unique-line ratio + length tier penalties", False, TEXT_PRIMARY, 13),
+        ("Symptom: Model repeated boilerplate", False, TEXT_PRIMARY, 13),
+        ("Root cause: No repetition penalty", False, TEXT_PRIMARY, 13),
+        ("Fix: advisory_reward() unique-line ratio + length tier penalties", False, TEXT_PRIMARY, 13),
         ("Result:      Stable output; 94.2% accuracy preserved", False, TEXT_PRIMARY, 13),
     ]
     for i, (text, bold, color, size) in enumerate(lines):
@@ -948,17 +978,16 @@ def build_slide_8_dspy(prs: Presentation) -> None:
         slide, lx, y, lw, Inches(1.45),
         "What DSPy does",
         "A compiler for LLM programs — not supervised fine-tuning. DSPy optimizes "
-        "prompts and few-shot examples automatically against a scoring metric, producing "
-        "a compiled program that generalizes beyond its training examples.",
+        "prompts and few-shot examples automatically against a scoring metric.",
     )
     y += Inches(1.45) + gap
     _info_panel(
         slide, lx, y, lw, Inches(1.45),
         "Program structure",
-        "Signature:  alerts + topology → root_cause + confidence\n"
-        "Module:     ChainOfThought(CorrelationSignature)\n"
-        "Optimizer:  BootstrapFewShot\n"
-        "Metric:     confidence calibration score",
+        "Signature: alerts + topology → root_cause + confidence\n"
+        "Module: ChainOfThought\n"
+        "Optimizer: BootstrapFewShot\n"
+        "Metric: confidence calibration score",
         body_font="Consolas",
         body_size=12,
     )
@@ -967,7 +996,7 @@ def build_slide_8_dspy(prs: Presentation) -> None:
         slide, lx, y, lw, Inches(1.2),
         "Optimized against",
         "Labeled alert clusters with known root causes. Metric rewards high confidence "
-        "on true positives and penalizes overconfident wrong attributions.",
+        "on true positives.",
     )
 
     # Right — accuracy card
@@ -980,7 +1009,7 @@ def build_slide_8_dspy(prs: Presentation) -> None:
                 "correlation accuracy", font_size=14, align=PP_ALIGN.CENTER)
     add_textbox(
         slide, rx + Inches(0.15), Inches(2.7), lw - Inches(0.3), Inches(0.45),
-        "Rule-based baseline: 100% on same eval set\nLLM advantage: confidence calibration",
+        "Rule-based baseline: 100% same eval",
         font_size=12, color_hex=TEXT_MUTED, align=PP_ALIGN.CENTER,
     )
 
@@ -988,23 +1017,22 @@ def build_slide_8_dspy(prs: Presentation) -> None:
     _info_panel(
         slide, rx, cy, lw, Inches(2.05),
         "Why confidence matters",
-        "Every correlate_alert() call returns a confidence score.\n"
-        "That single number drives all downstream decisions:",
+        "",
         border_hex=CONFIRMED_TEAL,
         header_hex=CONFIRMED_TEAL,
     )
-    row_y = cy + Inches(0.95)
+    row_y = cy + Inches(0.55)
     add_left_accent_row(
         slide, rx + Inches(0.15), row_y, lw - Inches(0.3), Inches(0.32),
-        LLM_BLUE, "< 0.85  →  PRELIMINARY advisory issued",
+        LLM_BLUE, "< 0.85   → PRELIMINARY advisory",
     )
     add_left_accent_row(
         slide, rx + Inches(0.15), row_y + Inches(0.38), lw - Inches(0.3), Inches(0.38),
-        CONFIRMED_TEAL, "≥ 0.85 + count ≥ 2  →  CONFIRMED advisory issued",
+        CONFIRMED_TEAL, "≥ 0.85 + count≥2 → CONFIRMED advisory",
     )
     add_left_accent_row(
         slide, rx + Inches(0.15), row_y + Inches(0.78), lw - Inches(0.3), Inches(0.32),
-        RULE_GREEN, "health True  →  close_incident() fires",
+        RULE_GREEN, "health True → close_incident()",
     )
 
     why_box = add_rounded_rect(
@@ -1022,9 +1050,8 @@ def build_slide_8_dspy(prs: Presentation) -> None:
     pw0.font.color.rgb = rgb(TEXT_MUTED)
     pw1 = tf_w.add_paragraph()
     pw1.text = (
-        "Correlation requires reasoning over dynamic, evolving alert clusters — not "
-        "pattern matching on fixed formats. DSPy's compiled few-shot approach generalizes "
-        "better than SFT for this task."
+        "Correlation requires reasoning over dynamic alert clusters. "
+        "DSPy generalizes better than SFT."
     )
     pw1.font.size = Pt(12)
     pw1.font.italic = True
@@ -1127,7 +1154,7 @@ def build_slide_9_agentic_loop(prs: Presentation) -> None:
         ox + Inches(0.8),
         row2_y + Inches(1.15),
         1.8,
-        "15s cycle",
+        "15s",
         arrow_color=LLM_BLUE,
         label_color=LLM_BLUE,
         italic=False,
@@ -1156,16 +1183,67 @@ def build_slide_9_agentic_loop(prs: Presentation) -> None:
     tf2.vertical_anchor = MSO_ANCHOR.MIDDLE
     p2 = tf2.paragraphs[0]
     p2.text = (
-        "T+60–90s  first alert  →  T+2–3 cycles  CONFIRMED  →  "
-        "T+1–2 cycles  SERVICE RESTORED"
+        "T+2–3 min first alert  →  T+5–6 min CONFIRMED  →  "
+        "T+12–14 min SERVICE RESTORED"
     )
     p2.alignment = PP_ALIGN.CENTER
     p2.font.size = Pt(12)
     p2.font.color.rgb = rgb(TEXT_PRIMARY)
 
 
-def build_slide_10_agentic_arch(prs: Presentation) -> None:
-    """Slide 10 — Google ADK decisions."""
+def build_slide_10_protocol(prs: Presentation) -> None:
+    """Slide 10 — The 6-Step Agentic Protocol (sequence diagram)."""
+    slide = blank_slide(prs)
+    add_slide_title(slide, "The 6-Step Agentic Protocol")
+    add_subtitle(
+        slide,
+        "Orchestrator LLM coordinates all tool calls — agents are specialists, "
+        "LLM is the conductor",
+        top=Inches(0.95),
+    )
+
+    max_w = Inches(12.5)
+    max_h = Inches(5.5)
+    img_aspect = 2400 / 1800
+    if float(max_w) / float(max_h) > img_aspect:
+        pic_h = max_h
+        pic_w = Inches(float(max_h) * img_aspect)
+    else:
+        pic_w = max_w
+        pic_h = Inches(float(max_w) / img_aspect)
+
+    top_y = Inches(1.2)
+    left_x = (SLIDE_W - pic_w) / 2
+    if AGENTIC_LOOP_PNG.exists():
+        slide.shapes.add_picture(str(AGENTIC_LOOP_PNG), left_x, top_y, width=pic_w, height=pic_h)
+    else:
+        add_textbox(
+            slide,
+            Inches(1.0),
+            top_y,
+            Inches(11.3),
+            Inches(1.0),
+            f"Missing diagram: {AGENTIC_LOOP_PNG}",
+            font_size=14,
+            color_hex=ALERT_RED,
+            align=PP_ALIGN.CENTER,
+        )
+
+    add_textbox(
+        slide,
+        Inches(0.5),
+        Inches(6.9),
+        Inches(12.3),
+        Inches(0.4),
+        "15s poll cycle  |  8 FunctionTools  |  6 steps per tick",
+        font_size=12,
+        color_hex=TEXT_MUTED,
+        align=PP_ALIGN.CENTER,
+    )
+
+
+def build_slide_11_agentic_arch(prs: Presentation) -> None:
+    """Slide 11 — Google ADK decisions."""
     slide = blank_slide(prs)
     add_slide_title(slide, "Google ADK LlmAgent + 8 FunctionTools")
     add_subtitle(slide, "6-step workflow  |  15s poll cycle", top=Inches(0.95), size=14)
@@ -1230,7 +1308,7 @@ def build_slide_10_agentic_arch(prs: Presentation) -> None:
     pi = tf_i.paragraphs[0]
     pi.text = (
         "Same alert, different outcomes — depends on evolving store state: "
-        "open incidents, flags, correlation history"
+        "open incidents, flags, history"
     )
     pi.alignment = PP_ALIGN.CENTER
     pi.font.size = Pt(13)
@@ -1256,19 +1334,19 @@ def _stat_card(slide, left, top, stat: str, label: str, caption: str, stat_color
                 caption, font_size=11, color_hex=TEXT_MUTED, align=PP_ALIGN.CENTER)
 
 
-def build_slide_11_results(prs: Presentation) -> None:
-    """Slide 11 — Results."""
+def build_slide_12_results(prs: Presentation) -> None:
+    """Slide 12 — Results."""
     slide = blank_slide(prs)
     add_slide_title(slide, "What It Does In Production")
     add_subtitle(slide, "Observed in demo runs — May 2026", top=Inches(0.95))
 
     cards = [
-        ("299", "tests passing", "end-to-end, ~13s full suite", CONFIRMED_TEAL),
+        ("305", "tests passing", "end-to-end, ~13s full suite", CONFIRMED_TEAL),
         ("0.90–0.95", "live confidence", "DSPyCorrelator on real alerts", LLM_BLUE),
-        ("2–3 cycles", "to CONFIRMED", "after fault injection", GOLD),
-        ("1–2 cycles", "to SERVICE RESTORED", "after healing", CONFIRMED_TEAL),
+        ("T+5–6 min", "to CONFIRMED", "after fault injection", GOLD),
+        ("T+12–14 min", "to SERVICE RESTORED", "after fault injection", CONFIRMED_TEAL),
         ("isolated", "ad noise", "separate from valkey-cart cascade", RULE_GREEN),
-        ("T+60–90s", "detection", "docker stop to first cart alert", MCP_ORANGE),
+        ("T+2–3 min", "detection", "fault to first alert", MCP_ORANGE),
     ]
     xs = [Inches(0.45), Inches(4.55), Inches(8.65)]
     ys = [Inches(1.45), Inches(3.85)]
@@ -1276,8 +1354,8 @@ def build_slide_11_results(prs: Presentation) -> None:
         _stat_card(slide, xs[idx % 3], ys[idx // 3], stat, label, cap, color)
 
 
-def build_slide_12_live_demo(prs: Presentation) -> None:
-    """Slide 12 — Live Demo."""
+def build_slide_13_live_demo(prs: Presentation) -> None:
+    """Slide 13 — Live Demo."""
     slide = blank_slide(prs)
     banner = add_rounded_rect(
         slide, Inches(0.45), Inches(1.0), Inches(12.4), Inches(1.0), fill_hex=LLM_BLUE
@@ -1293,23 +1371,42 @@ def build_slide_12_live_demo(prs: Presentation) -> None:
     p.font.color.rgb = rgb(TEXT_PRIMARY)
 
     add_textbox(
-        slide, Inches(0.8), Inches(2.2), Inches(11.7), Inches(0.7),
-        "Scenario: valkey-cart cache failure cascade\nOpenTelemetry demo environment",
-        font_size=15, color_hex=TEXT_MUTED, align=PP_ALIGN.CENTER,
+        slide,
+        Inches(0.8),
+        Inches(2.05),
+        Inches(11.7),
+        Inches(0.95),
+        "Scenario: valkey-cart cache failure cascade\n"
+        "OpenTelemetry demo environment\n"
+        "Fault pre-injected — live: healing + SERVICE RESTORED (~6 minutes)",
+        font_size=15,
+        color_hex=TEXT_MUTED,
+        align=PP_ALIGN.CENTER,
     )
 
     steps = [
-        (DATA_GRAY, "Baseline", "system monitoring, ad noise isolated"),
-        (ALERT_RED, "Fault", "docker stop valkey-cart"),
-        (GOLD, "Detection", "cart cascade alerts, new incident opens"),
-        (LLM_BLUE, "Advisory", "CONFIRMED NOC ADVISORY (confidence > 0.85)"),
+        (
+            DATA_GRAY,
+            "Baseline",
+            "system monitoring, cart cascade already active, CONFIRMED advisory showing",
+        ),
         (CONFIRMED_TEAL, "Healing", "docker start valkey-cart"),
-        (CONFIRMED_TEAL, "Resolution", "SERVICE RESTORED, incident removed from board"),
+        (GOLD, "Recovery", "Prometheus confirms cart healthy"),
+        (
+            LLM_BLUE,
+            "SERVICE RESTORED",
+            "advisory fires, incident closed, removed from board",
+        ),
+        (
+            CONFIRMED_TEAL,
+            "Board clears",
+            "cart incident resolved, only ad noise remains",
+        ),
     ]
     card_w = Inches(9.0)
     card_x = Inches(2.15)
-    y0 = Inches(3.1)
-    spacing = Inches(0.68)
+    y0 = Inches(3.25)
+    spacing = Inches(0.78)
 
     for i, (accent, name, detail) in enumerate(steps):
         y = y0 + i * spacing
@@ -1329,8 +1426,8 @@ def build_slide_12_live_demo(prs: Presentation) -> None:
         )
 
 
-def build_slide_13_lessons(prs: Presentation) -> None:
-    """Slide 13 — Lessons Learned."""
+def build_slide_14_lessons(prs: Presentation) -> None:
+    """Slide 14 — Lessons Learned."""
     slide = blank_slide(prs)
     add_slide_title(slide, "What We Learned — And Would Do Differently")
 
@@ -1345,8 +1442,11 @@ def build_slide_13_lessons(prs: Presentation) -> None:
          "Understand operating environment before tuning accuracy"),
         ("Fine-tuning teaches format, not temporal awareness",
          "Know the boundary of what training can and cannot do"),
-        ("Choose your orchestration framework first",
-         "Build everything around it — assumptions surface only at migration"),
+        (
+            "Observability window size is a first-class design decision",
+            "PromQL [5m] vs [1m] window affects detection latency, noise stability, "
+            "and recovery confirmation timing",
+        ),
     ]
     c1, c2 = Inches(0.5), Inches(6.9)
     row_ys = [Inches(1.25), Inches(3.0), Inches(4.75)]
@@ -1373,7 +1473,7 @@ def build_slide_13_lessons(prs: Presentation) -> None:
 
 
 def build_deck() -> Presentation:
-    """Assemble all 13 slides."""
+    """Assemble all 14 slides."""
     prs = new_presentation()
     build_slide_1_title(prs)
     build_slide_2_problem(prs)
@@ -1384,10 +1484,11 @@ def build_deck() -> Presentation:
     build_slide_7_models(prs)
     build_slide_8_dspy(prs)
     build_slide_9_agentic_loop(prs)
-    build_slide_10_agentic_arch(prs)
-    build_slide_11_results(prs)
-    build_slide_12_live_demo(prs)
-    build_slide_13_lessons(prs)
+    build_slide_10_protocol(prs)
+    build_slide_11_agentic_arch(prs)
+    build_slide_12_results(prs)
+    build_slide_13_live_demo(prs)
+    build_slide_14_lessons(prs)
     return prs
 
 

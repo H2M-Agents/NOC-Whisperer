@@ -29,6 +29,119 @@ The three dashboard panels are updated through a shared in-process `NOCDashboard
 - INCIDENT BOARD: refreshed from `IncidentStore.get_open_incidents()` each cycle
 - NOC ADVISORY: `communications_tools.update_advisory()` on successful generation
 
+### ADK cycle sequence diagrams
+
+Two diagrams cover one 15-second poll cycle. Labels are GitHub Mermaid safe — no HTML tags, no special symbols.
+
+#### Diagram 1 — Detection and correlation path (Steps 1 through 5)
+
+Alert ingestion, normalization, routing, correlation, and advisory generation.
+
+```mermaid
+sequenceDiagram
+    participant Run as run_demo_adk
+    participant ADK as ADK Runner
+    participant LLM as Orchestrator LLM
+    participant Prom as Prometheus MCP
+    participant Norm as NormalizerAgent
+    participant Triage as TriageAgent
+    participant Corr as CorrelationAgent
+    participant Comm as CommunicationsAgent
+    participant Store as IncidentStore
+    participant Dash as NOCDashboard
+
+    Run->>ADK: create session and send monitor message
+    ADK->>LLM: NOC instruction plus user message
+
+    Note over LLM,Prom: STEP 1 detect breaches
+    LLM->>Prom: get_active_alerts
+    Prom-->>LLM: alert dict list or empty
+
+    alt alerts returned
+        loop each alert in list
+            Note over LLM,Norm: STEP 2 normalize
+            LLM->>Norm: normalize_alert device metric value source
+            Norm-->>LLM: CanonicalAlert dict
+            Norm->>Dash: update alert stream
+
+            Note over LLM,Triage: STEP 3 route
+            LLM->>Triage: route_alert normalized fields
+            Triage->>Store: get_open_incidents
+            Store-->>Triage: open incident list
+            Triage-->>LLM: action new or append and incident_id
+
+            Note over LLM,Corr: STEP 4 correlate
+            LLM->>Corr: correlate_alert all fields
+            Corr->>Store: dedup guard reads open incidents
+            Corr->>Corr: DSPy correlate cluster
+            Corr->>Store: upsert incident
+            Corr-->>LLM: incident summary dict
+
+            Note over LLM,Comm: STEP 5 advisories
+            opt confidence high and alert count at least 2
+                LLM->>Comm: generate_advisory confirmed or preliminary
+                Comm->>Store: load incident and mark sent flags
+                Comm->>Dash: update advisory panel
+                Comm-->>LLM: advisory text
+            end
+        end
+    else no alerts
+        Note over LLM: skip steps 2 through 5 go to step 6
+    end
+```
+
+#### Diagram 2 — Recovery and cycle wrap (Step 6 plus dashboard refresh)
+
+Health checks for open incidents, closure, resolution advisory, and post-cycle rendering.
+
+```mermaid
+sequenceDiagram
+    participant Run as run_demo_adk
+    participant ADK as ADK Runner
+    participant LLM as Orchestrator LLM
+    participant Prom as Prometheus MCP
+    participant Comm as CommunicationsAgent
+    participant Store as IncidentStore
+    participant Dash as NOCDashboard
+
+    Note over Run,ADK: continues same cycle after diagram 1
+
+    Run->>ADK: session still active
+    ADK->>LLM: continue step 6
+
+    Note over LLM,Prom: STEP 6 health and close
+    LLM->>Store: check_open_incidents
+    Store-->>LLM: open incident list
+
+    alt open incidents exist
+        loop each open incident
+            LLM->>Prom: check_service_health root_cause_device
+            Prom-->>LLM: healthy true or false
+            opt device healthy
+                LLM->>Store: close_incident
+                Store-->>LLM: status resolved
+                LLM->>Comm: generate_advisory resolution
+                Comm->>Store: load incident
+                Comm->>Dash: update advisory panel
+                Comm-->>LLM: resolution text
+            end
+        end
+    else no open incidents
+        Note over LLM: nothing to health check
+    end
+
+    Note over Run,Dash: post cycle refresh every 15 seconds
+    Run->>Store: get_open_incidents
+    Store-->>Run: open incident list
+    Run->>Dash: refresh incident board
+    Run->>Dash: render three panels
+    Run->>Run: sleep 15 seconds and start next cycle
+```
+
+**How data moves between tool calls:** the orchestrator LLM reads each tool JSON return and copies scalar fields into the next tool call arguments. Cross-cycle memory lives only in IncidentStore and the dashboard buffers.
+
+**Preview without mermaid.live:** push to GitHub and view this file, or use the VS Code Markdown preview with a Mermaid extension.
+
 ---
 
 ## Agent 1 — NormalizerAgent
